@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { BottomNavigation } from "@/components/ui/bottom-navigation";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { HomeTab } from "@/components/tabs/HomeTab";
 import { KitchenTab } from "@/components/tabs/KitchenTab";
 import { GymTab } from "@/components/tabs/GymTab";
@@ -8,6 +10,8 @@ import { MindTab } from "@/components/tabs/MindTab";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const { isOnboardingComplete } = useUserInfo();
+  const [showOnboarding, setShowOnboarding] = useState(!isOnboardingComplete);
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -25,6 +29,10 @@ const Index = () => {
         return <HomeTab />;
     }
   };
+
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
