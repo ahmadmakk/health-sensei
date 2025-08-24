@@ -317,6 +317,179 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Pantry Management Functions
+  const addPantryItem = (item: Omit<PantryItem, 'id' | 'addedDate'>) => {
+    const newItem: PantryItem = {
+      ...item,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      addedDate: new Date().toISOString(),
+      isLowStock: isLowStock({ ...item, id: '', addedDate: '' }),
+    };
+
+    const updatedItems = [...pantryItems, newItem];
+    setPantryItems(updatedItems);
+    localStorage.setItem(PANTRY_ITEMS_KEY, JSON.stringify(updatedItems));
+  };
+
+  const removePantryItem = (itemId: string) => {
+    const updatedItems = pantryItems.filter(item => item.id !== itemId);
+    setPantryItems(updatedItems);
+    localStorage.setItem(PANTRY_ITEMS_KEY, JSON.stringify(updatedItems));
+  };
+
+  const updatePantryItem = (itemId: string, updates: Partial<PantryItem>) => {
+    const updatedItems = pantryItems.map(item => {
+      if (item.id === itemId) {
+        const updated = { ...item, ...updates };
+        return { ...updated, isLowStock: isLowStock(updated) };
+      }
+      return item;
+    });
+    setPantryItems(updatedItems);
+    localStorage.setItem(PANTRY_ITEMS_KEY, JSON.stringify(updatedItems));
+  };
+
+  const getPantryStats = (): PantryStats => {
+    const stats: PantryStats = {
+      totalItems: pantryItems.length,
+      expiringWithin3Days: pantryItems.filter(item =>
+        item.expiryDate && isExpiringSoon(item.expiryDate)
+      ).length,
+      lowStockItems: pantryItems.filter(item => item.isLowStock).length,
+      categoryCounts: pantryItems.reduce((acc, item) => {
+        acc[item.category] = (acc[item.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
+    return stats;
+  };
+
+  // Recipe Management Functions
+  const addRecipe = (recipe: Omit<Recipe, 'id' | 'createdAt'>) => {
+    const newRecipe: Recipe = {
+      ...recipe,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedRecipes = [...recipes, newRecipe];
+    setRecipes(updatedRecipes);
+    localStorage.setItem(RECIPES_KEY, JSON.stringify(updatedRecipes));
+  };
+
+  const removeRecipe = (recipeId: string) => {
+    const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeId);
+    setRecipes(updatedRecipes);
+    localStorage.setItem(RECIPES_KEY, JSON.stringify(updatedRecipes));
+  };
+
+  const updateRecipe = (recipeId: string, updates: Partial<Recipe>) => {
+    const updatedRecipes = recipes.map(recipe =>
+      recipe.id === recipeId ? { ...recipe, ...updates } : recipe
+    );
+    setRecipes(updatedRecipes);
+    localStorage.setItem(RECIPES_KEY, JSON.stringify(updatedRecipes));
+  };
+
+  const toggleRecipeFavorite = (recipeId: string) => {
+    const updatedRecipes = recipes.map(recipe =>
+      recipe.id === recipeId ? { ...recipe, isFavorite: !recipe.isFavorite } : recipe
+    );
+    setRecipes(updatedRecipes);
+    localStorage.setItem(RECIPES_KEY, JSON.stringify(updatedRecipes));
+  };
+
+  // Meal Planning Functions
+  const addMealPlan = (plan: Omit<MealPlan, 'id'>) => {
+    const newPlan: MealPlan = {
+      ...plan,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    };
+
+    const updatedPlans = [...mealPlans, newPlan];
+    setMealPlans(updatedPlans);
+    localStorage.setItem(MEAL_PLANS_KEY, JSON.stringify(updatedPlans));
+  };
+
+  const removeMealPlan = (planId: string) => {
+    const updatedPlans = mealPlans.filter(plan => plan.id !== planId);
+    setMealPlans(updatedPlans);
+    localStorage.setItem(MEAL_PLANS_KEY, JSON.stringify(updatedPlans));
+  };
+
+  const updateMealPlan = (planId: string, updates: Partial<MealPlan>) => {
+    const updatedPlans = mealPlans.map(plan =>
+      plan.id === planId ? { ...plan, ...updates } : plan
+    );
+    setMealPlans(updatedPlans);
+    localStorage.setItem(MEAL_PLANS_KEY, JSON.stringify(updatedPlans));
+  };
+
+  const getMealPlansForDate = (date: string): MealPlan[] => {
+    return mealPlans.filter(plan => plan.date === date);
+  };
+
+  // Grocery List Functions
+  const addGroceryList = (list: Omit<GroceryList, 'id' | 'createdAt'>) => {
+    const newList: GroceryList = {
+      ...list,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedLists = [...groceryLists, newList];
+    setGroceryLists(updatedLists);
+    localStorage.setItem(GROCERY_LISTS_KEY, JSON.stringify(updatedLists));
+  };
+
+  const removeGroceryList = (listId: string) => {
+    const updatedLists = groceryLists.filter(list => list.id !== listId);
+    setGroceryLists(updatedLists);
+    localStorage.setItem(GROCERY_LISTS_KEY, JSON.stringify(updatedLists));
+  };
+
+  const updateGroceryList = (listId: string, updates: Partial<GroceryList>) => {
+    const updatedLists = groceryLists.map(list =>
+      list.id === listId ? { ...list, ...updates } : list
+    );
+    setGroceryLists(updatedLists);
+    localStorage.setItem(GROCERY_LISTS_KEY, JSON.stringify(updatedLists));
+  };
+
+  const generateGroceryListForRecipe = (recipeId: string, date?: string): GroceryList => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) throw new Error('Recipe not found');
+
+    const availability = canMakeRecipe(recipe, pantryItems);
+    const groceryItems = generateGroceryList(
+      availability.missingIngredients,
+      availability.insufficientIngredients,
+      recipe.name
+    );
+
+    const newList: GroceryList = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: `Shopping for ${recipe.name}`,
+      items: groceryItems,
+      createdAt: new Date().toISOString(),
+      isCompleted: false,
+      forDate: date,
+    };
+
+    const updatedLists = [...groceryLists, newList];
+    setGroceryLists(updatedLists);
+    localStorage.setItem(GROCERY_LISTS_KEY, JSON.stringify(updatedLists));
+
+    return newList;
+  };
+
+  const checkRecipeAvailability = (recipeId: string) => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) return { canMake: false, missingIngredients: [], insufficientIngredients: [] };
+
+    return canMakeRecipe(recipe, pantryItems);
+  };
+
   return (
     <FoodTrackingContext.Provider value={{
       todaysNutrition,
