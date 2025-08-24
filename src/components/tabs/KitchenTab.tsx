@@ -64,6 +64,12 @@ export function KitchenTab() {
 
           setAnalysisProgress('Analyzing food with AI...');
 
+          // Show analysis start notification
+          toast({
+            title: "Analyzing your food...",
+            description: "AI is identifying the food and calculating nutrition.",
+          });
+
           // Determine user's goal from their info
           const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
                       userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
