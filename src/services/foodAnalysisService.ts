@@ -184,6 +184,11 @@ export class FoodAnalysisService {
 
   // Health check method to verify API connectivity
   async healthCheck(): Promise<boolean> {
+    if (!this.model || !API_KEY) {
+      console.warn('Google API not configured');
+      return false;
+    }
+
     try {
       const result = await this.model.generateContent("Test connection. Reply with 'OK'.");
       return result.response.text().includes('OK');
