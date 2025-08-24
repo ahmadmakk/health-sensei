@@ -357,7 +357,7 @@ export function KitchenTab() {
 
           <Button
             variant="outline"
-            className="h-16 flex flex-col gap-2"
+            className="h-16 flex flex-col gap-1"
             onClick={() => fileInputRef.current?.click()}
             disabled={isAnalyzing}
           >
@@ -366,7 +366,9 @@ export function KitchenTab() {
             ) : (
               <Camera className="w-5 h-5" />
             )}
-            <span className="text-xs">{isAnalyzing ? 'Analyzing...' : 'Photo'}</span>
+            <span className="text-xs text-center leading-tight">
+              {isAnalyzing ? analysisProgress || 'Analyzing...' : 'Photo'}
+            </span>
           </Button>
 
           <input
