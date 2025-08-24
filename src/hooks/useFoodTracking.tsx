@@ -1,12 +1,24 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
-  MealEntry, 
-  DailyNutrition, 
-  FoodItem, 
+import {
+  MealEntry,
+  DailyNutrition,
+  FoodItem,
   NutritionGoals,
   calculateDailyNutrition,
-  getMacroPercentages 
+  getMacroPercentages
 } from '@/types/food';
+import {
+  PantryItem,
+  Recipe,
+  MealPlan,
+  GroceryList,
+  GroceryItem,
+  PantryStats,
+  canMakeRecipe,
+  generateGroceryList,
+  isExpiringSoon,
+  isLowStock
+} from '@/types/pantry';
 import { useUserInfo } from './useUserInfo';
 
 interface FoodTrackingContextType {
