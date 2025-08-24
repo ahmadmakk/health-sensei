@@ -238,6 +238,7 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
       getCaloriesRemaining,
       getDailyNutrition,
       analyzeFood,
+      searchFood,
     }}>
       {children}
     </FoodTrackingContext.Provider>
