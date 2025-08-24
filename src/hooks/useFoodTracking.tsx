@@ -81,6 +81,10 @@ const FoodTrackingContext = createContext<FoodTrackingContextType | undefined>(u
 
 const NUTRITION_DATA_KEY = 'healthai_nutrition_data';
 const NUTRITION_GOALS_KEY = 'healthai_nutrition_goals';
+const PANTRY_ITEMS_KEY = 'healthai_pantry_items';
+const RECIPES_KEY = 'healthai_recipes';
+const MEAL_PLANS_KEY = 'healthai_meal_plans';
+const GROCERY_LISTS_KEY = 'healthai_grocery_lists';
 
 // Default nutrition goals
 const defaultNutritionGoals: NutritionGoals = {
