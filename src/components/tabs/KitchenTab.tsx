@@ -475,7 +475,9 @@ export function KitchenTab() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-medium text-foreground">{meal.foodItem.name}</h3>
-                    {meal.source === 'photo' && <Camera className="w-3 h-3 text-muted-foreground" />}
+                    {meal.source === 'photo' && <Camera className="w-3 h-3 text-blue-500" />}
+                    {meal.source === 'search' && <Search className="w-3 h-3 text-green-500" />}
+                    {meal.source === 'manual' && <Plus className="w-3 h-3 text-orange-500" />}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {new Date(meal.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} •
