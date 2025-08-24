@@ -36,28 +36,28 @@ export class FoodAnalysisService {
     try {
       // Convert base64 image data to the format Gemini expects
       const base64Data = imageData.split(',')[1];
-      
+
       const prompt = `
-        Analyze this food image and provide a detailed nutritional breakdown. 
-        
+        Analyze this food image and provide a detailed nutritional breakdown.
+
         Please identify:
         1. The main food item(s) in the image
         2. Estimate the portion size/serving
         3. Calculate approximate nutritional values
-        
+
         ${this.getGoalSpecificPrompt(goal)}
-        
+
         Return your analysis in this exact JSON format:
         {
           "name": "Food name",
           "calories": number,
           "protein": number (grams),
-          "carbs": number (grams), 
+          "carbs": number (grams),
           "fat": number (grams),
           "servingSize": "description of portion",
           "confidence": number (0-100)
         }
-        
+
         Be conservative with estimates and realistic about portion sizes.
         If you can't clearly identify the food, return confidence below 50.
       `;
@@ -72,18 +72,18 @@ export class FoodAnalysisService {
       const result = await this.model.generateContent([prompt, imagePart]);
       const response = result.response;
       const text = response.text();
-      
+
       // Extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('Could not parse AI response');
       }
-      
+
       const analysis: FoodAnalysisResult = JSON.parse(jsonMatch[0]);
-      
+
       // Apply goal-based calorie adjustments
       const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
-      
+
       // Convert to FoodItem format
       const foodItem: FoodItem = {
         id: Date.now().toString(),
@@ -98,14 +98,97 @@ export class FoodAnalysisService {
         isCustom: true,
         createdAt: new Date().toISOString(),
       };
-      
+
       return foodItem;
-      
+
     } catch (error) {
       console.error('Food analysis failed:', error);
-      
+
       // Fallback to mock data if AI fails
       return this.getFallbackFood(goal);
+    }
+  }
+
+  async searchFood(
+    foodDescription: string,
+    goal: 'lose_weight' | 'maintain' | 'gain_weight'
+  ): Promise<FoodItem> {
+    // Check if API is available
+    if (!this.model || !API_KEY) {
+      console.warn('Google API not available, using fallback');
+      return this.getFallbackFoodFromText(foodDescription, goal);
+    }
+
+    try {
+      const prompt = `
+        Analyze the food described as: "${foodDescription}"
+
+        Please provide detailed nutritional information for a typical serving of this food.
+
+        Consider:
+        1. Standard serving size for this food item
+        2. Typical preparation method (if not specified, assume most common)
+        3. Accurate calorie and macro estimates
+
+        ${this.getGoalSpecificPrompt(goal)}
+
+        Return your analysis in this exact JSON format:
+        {
+          "name": "Properly formatted food name",
+          "calories": number,
+          "protein": number (grams),
+          "carbs": number (grams),
+          "fat": number (grams),
+          "servingSize": "standard serving description",
+          "confidence": number (0-100)
+        }
+
+        Examples:
+        - "hamburger" → "Hamburger with Bun", calories for 1 medium burger
+        - "chicken" → "Grilled Chicken Breast", calories for 4oz serving
+        - "apple" → "Medium Apple", calories for 1 medium apple
+
+        Be realistic about portion sizes and accurate with nutritional data.
+        If the description is too vague, make reasonable assumptions and note lower confidence.
+      `;
+
+      const result = await this.model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
+
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Could not parse AI response');
+      }
+
+      const analysis: FoodAnalysisResult = JSON.parse(jsonMatch[0]);
+
+      // Apply goal-based calorie adjustments
+      const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
+
+      // Convert to FoodItem format
+      const foodItem: FoodItem = {
+        id: Date.now().toString(),
+        name: analysis.name,
+        calories: adjustedCalories,
+        macros: {
+          protein: analysis.protein,
+          carbs: analysis.carbs,
+          fat: analysis.fat,
+        },
+        servingSize: analysis.servingSize,
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      return foodItem;
+
+    } catch (error) {
+      console.error('Food search failed:', error);
+
+      // Fallback to mock data if AI fails
+      return this.getFallbackFoodFromText(foodDescription, goal);
     }
   }
 
