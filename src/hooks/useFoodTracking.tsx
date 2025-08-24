@@ -26,11 +26,46 @@ interface FoodTrackingContextType {
   todaysNutrition: DailyNutrition;
   nutritionGoals: NutritionGoals;
 
-  // Actions
+  // Meal Actions
   addMeal: (meal: Omit<MealEntry, 'id' | 'timestamp'>) => void;
   removeMeal: (mealId: string) => void;
   updateMeal: (mealId: string, updates: Partial<MealEntry>) => void;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => void;
+
+  // Pantry Management
+  pantryItems: PantryItem[];
+  addPantryItem: (item: Omit<PantryItem, 'id' | 'addedDate'>) => void;
+  removePantryItem: (itemId: string) => void;
+  updatePantryItem: (itemId: string, updates: Partial<PantryItem>) => void;
+  getPantryStats: () => PantryStats;
+
+  // Recipe Management
+  recipes: Recipe[];
+  addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void;
+  removeRecipe: (recipeId: string) => void;
+  updateRecipe: (recipeId: string, updates: Partial<Recipe>) => void;
+  toggleRecipeFavorite: (recipeId: string) => void;
+
+  // Meal Planning
+  mealPlans: MealPlan[];
+  addMealPlan: (plan: Omit<MealPlan, 'id'>) => void;
+  removeMealPlan: (planId: string) => void;
+  updateMealPlan: (planId: string, updates: Partial<MealPlan>) => void;
+  getMealPlansForDate: (date: string) => MealPlan[];
+
+  // Grocery Lists
+  groceryLists: GroceryList[];
+  addGroceryList: (list: Omit<GroceryList, 'id' | 'createdAt'>) => void;
+  removeGroceryList: (listId: string) => void;
+  updateGroceryList: (listId: string, updates: Partial<GroceryList>) => void;
+  generateGroceryListForRecipe: (recipeId: string, date?: string) => GroceryList;
+
+  // Recipe Checking
+  checkRecipeAvailability: (recipeId: string) => {
+    canMake: boolean;
+    missingIngredients: any[];
+    insufficientIngredients: any[];
+  };
 
   // Helpers
   getMacroPercentagesForToday: () => { protein: number; carbs: number; fat: number };
