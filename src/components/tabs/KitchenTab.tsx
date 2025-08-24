@@ -32,42 +32,90 @@ export function KitchenTab() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
+    setAnalysisProgress('Reading image...');
+
     try {
-      // Convert file to base64 for mock analysis
+      // Convert file to base64
       const reader = new FileReader();
       reader.onload = async () => {
-        const imageData = reader.result as string;
+        try {
+          const imageData = reader.result as string;
 
-        // Determine user's goal from their info
-        const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
-                    userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+          setAnalysisProgress('Analyzing food with AI...');
 
-        const analyzedFood = await analyzeFood(imageData, goal);
+          // Determine user's goal from their info
+          const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                      userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
 
-        // Add the analyzed food as a meal
-        addMeal({
-          foodItem: analyzedFood,
-          quantity: 1,
-          mealType: getCurrentMealType(),
-          source: 'photo',
-          imageUrl: imageData,
-        });
+          const analyzedFood = await analyzeFood(imageData, goal);
 
+          setAnalysisProgress('Adding to diary...');
+
+          // Add the analyzed food as a meal
+          addMeal({
+            foodItem: analyzedFood,
+            quantity: 1,
+            mealType: getCurrentMealType(),
+            source: 'photo',
+            imageUrl: imageData,
+          });
+
+          toast({
+            title: "Food analyzed successfully!",
+            description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+          });
+
+        } catch (analysisError) {
+          console.error('Food analysis error:', analysisError);
+          toast({
+            title: "Analysis failed",
+            description: "AI couldn't analyze this image. You can add the food manually instead.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      reader.onerror = () => {
         toast({
-          title: "Food analyzed!",
-          description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+          title: "File reading failed",
+          description: "Couldn't read the image file. Please try again.",
+          variant: "destructive",
         });
       };
+
       reader.readAsDataURL(file);
+
     } catch (error) {
+      console.error('Photo capture error:', error);
       toast({
-        title: "Analysis failed",
-        description: "Sorry, we couldn't analyze your food photo. Try manual entry instead.",
+        title: "Photo capture failed",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
+      setAnalysisProgress('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
