@@ -3,7 +3,12 @@ import { FoodItem, AIFoodAnalysis } from '@/types/food';
 
 // Initialize Gemini AI
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY!);
+
+if (!API_KEY) {
+  console.error('Google API key not found. Please set VITE_GOOGLE_API_KEY environment variable.');
+}
+
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
 interface FoodAnalysisResult {
   name: string;
