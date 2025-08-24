@@ -265,6 +265,41 @@ export class FoodAnalysisService {
     };
   }
 
+  private getFallbackFoodFromText(
+    foodDescription: string,
+    goal: 'lose_weight' | 'maintain' | 'gain_weight'
+  ): FoodItem {
+    // Basic fallback based on common food types
+    const description = foodDescription.toLowerCase();
+    let fallbackFood;
+
+    if (description.includes('burger') || description.includes('hamburger')) {
+      fallbackFood = { name: "Hamburger", calories: 540, macros: { protein: 25, carbs: 40, fat: 31 }, servingSize: "1 medium burger" };
+    } else if (description.includes('chicken')) {
+      fallbackFood = { name: "Grilled Chicken", calories: 165, macros: { protein: 31, carbs: 0, fat: 4 }, servingSize: "4oz serving" };
+    } else if (description.includes('salad')) {
+      fallbackFood = { name: "Garden Salad", calories: 120, macros: { protein: 8, carbs: 15, fat: 6 }, servingSize: "1 bowl" };
+    } else if (description.includes('apple') || description.includes('fruit')) {
+      fallbackFood = { name: "Apple", calories: 80, macros: { protein: 0, carbs: 21, fat: 0 }, servingSize: "1 medium" };
+    } else if (description.includes('rice')) {
+      fallbackFood = { name: "White Rice", calories: 130, macros: { protein: 3, carbs: 28, fat: 0 }, servingSize: "1/2 cup cooked" };
+    } else {
+      fallbackFood = { name: "Mixed Food", calories: 300, macros: { protein: 15, carbs: 35, fat: 12 }, servingSize: "1 serving" };
+    }
+
+    const adjustedCalories = this.applyGoalAdjustment(fallbackFood.calories, goal);
+
+    return {
+      id: Date.now().toString(),
+      name: `${fallbackFood.name} (Estimated)`,
+      calories: adjustedCalories,
+      macros: fallbackFood.macros,
+      servingSize: fallbackFood.servingSize,
+      isCustom: true,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
   // Health check method to verify API connectivity
   async healthCheck(): Promise<boolean> {
     if (!this.model || !API_KEY) {
