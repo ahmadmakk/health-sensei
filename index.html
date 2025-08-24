@@ -2,19 +2,48 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HealthAI - Your Personal Health Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Health Sensei - Your Personal Health Companion</title>
     <meta name="description" content="AI-powered health tracking app with nutrition, fitness, health monitoring, and mental wellness features" />
-    <meta name="author" content="Lovable" />
+    <meta name="author" content="Health Sensei" />
 
-    <meta property="og:title" content="e0e3d78b-be99-46f0-b897-90eee302b5b8" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Mobile Web App Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Health Sensei" />
+    <meta name="theme-color" content="#1F8FFF" />
+
+    <!-- Prevent zooming and improve touch responsiveness -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Health Sensei - Personal Health Companion" />
+    <meta property="og:description" content="AI-powered health tracking mobile app" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Health Sensei" />
+    <meta name="twitter:description" content="AI-powered health tracking mobile app" />
+
+    <!-- iOS Safari optimizations -->
+    <style>
+      /* Prevent iOS bounce scrolling */
+      body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Safe area adjustments for notched devices */
+      #root {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+    </style>
   </head>
 
   <body>
