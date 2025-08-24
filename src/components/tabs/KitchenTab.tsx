@@ -179,6 +179,62 @@ export function KitchenTab() {
     });
   };
 
+  const handleAISearch = async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsSearching(true);
+    setAnalysisProgress('Searching with AI...');
+
+    try {
+      // Show search start notification
+      toast({
+        title: "Searching for food...",
+        description: `AI is analyzing "${query}" and calculating nutrition.`,
+      });
+
+      // Determine user's goal from their info
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const analyzedFood = await searchFood(query, goal);
+
+      setAnalysisProgress('Adding to diary...');
+
+      // Add the analyzed food as a meal
+      addMeal({
+        foodItem: analyzedFood,
+        quantity: 1,
+        mealType: getCurrentMealType(),
+        source: 'search',
+      });
+
+      toast({
+        title: "Food found!",
+        description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+      });
+
+      // Clear search
+      setSearchQuery('');
+
+    } catch (error) {
+      console.error('Food search error:', error);
+      toast({
+        title: "Search failed",
+        description: "AI couldn't find this food. Try manual entry or a photo instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+      setAnalysisProgress('');
+    }
+  };
+
+  const handleSearchKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchQuery.trim()) {
+      handleAISearch(searchQuery);
+    }
+  };
+
   const getCurrentMealType = (): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
     const hour = new Date().getHours();
     if (hour < 10) return 'breakfast';
