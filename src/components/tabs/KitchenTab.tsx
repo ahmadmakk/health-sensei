@@ -12,11 +12,13 @@ import { Plus, Search, Scan, Camera, Pill, Target, Loader2, Trash2 } from "lucid
 import { useState, useRef } from "react";
 
 export function KitchenTab() {
-  const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood } = useFoodTracking();
+  const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood, searchFood } = useFoodTracking();
   const { userInfo } = useUserInfo();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [manualFood, setManualFood] = useState({
     name: '',
     calories: '',
