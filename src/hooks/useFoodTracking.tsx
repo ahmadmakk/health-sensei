@@ -492,15 +492,53 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
 
   return (
     <FoodTrackingContext.Provider value={{
+      // Nutrition data
       todaysNutrition,
       nutritionGoals,
+
+      // Meal actions
       addMeal,
       removeMeal,
       updateMeal,
       updateNutritionGoals,
+
+      // Pantry management
+      pantryItems,
+      addPantryItem,
+      removePantryItem,
+      updatePantryItem,
+      getPantryStats,
+
+      // Recipe management
+      recipes,
+      addRecipe,
+      removeRecipe,
+      updateRecipe,
+      toggleRecipeFavorite,
+
+      // Meal planning
+      mealPlans,
+      addMealPlan,
+      removeMealPlan,
+      updateMealPlan,
+      getMealPlansForDate,
+
+      // Grocery lists
+      groceryLists,
+      addGroceryList,
+      removeGroceryList,
+      updateGroceryList,
+      generateGroceryListForRecipe,
+
+      // Recipe checking
+      checkRecipeAvailability,
+
+      // Helpers
       getMacroPercentagesForToday,
       getCaloriesRemaining,
       getDailyNutrition,
+
+      // AI analysis
       analyzeFood,
       searchFood,
     }}>
