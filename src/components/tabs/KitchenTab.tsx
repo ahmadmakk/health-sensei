@@ -327,7 +327,7 @@ export function KitchenTab() {
             <DialogTrigger asChild>
               <Button variant="outline" className="h-16 flex flex-col gap-2">
                 <Search className="w-5 h-5" />
-                <span className="text-xs">Manual</span>
+                <span className="text-xs">Manual Entry</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
