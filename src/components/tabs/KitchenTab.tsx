@@ -15,6 +15,7 @@ export function KitchenTab() {
   const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood } = useFoodTracking();
   const { userInfo } = useUserInfo();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualFood, setManualFood] = useState({
     name: '',
