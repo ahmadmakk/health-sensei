@@ -7,8 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:mobile": "vite build && npx cap sync",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:setup": "npx cap add ios && npx cap add android",
+    "mobile:sync": "npx cap sync",
+    "mobile:ios": "npm run build:mobile && npx cap open ios",
+    "mobile:android": "npm run build:mobile && npx cap open android",
+    "mobile:run:ios": "npm run build:mobile && npx cap run ios",
+    "mobile:run:android": "npm run build:mobile && npx cap run android"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
