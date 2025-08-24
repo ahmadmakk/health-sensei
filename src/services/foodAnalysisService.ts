@@ -21,12 +21,18 @@ interface FoodAnalysisResult {
 }
 
 export class FoodAnalysisService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  private model = genAI ? genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) : null;
 
   async analyzeFood(
     imageData: string,
     goal: 'lose_weight' | 'maintain' | 'gain_weight'
   ): Promise<FoodItem> {
+    // Check if API is available
+    if (!this.model || !API_KEY) {
+      console.warn('Google API not available, using fallback');
+      return this.getFallbackFood(goal);
+    }
+
     try {
       // Convert base64 image data to the format Gemini expects
       const base64Data = imageData.split(',')[1];
