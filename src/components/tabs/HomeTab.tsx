@@ -1,6 +1,7 @@
 import { HealthCard } from "@/components/ui/health-card";
 import { CircularCalories } from "@/components/ui/circular-calories";
 import { Button } from "@/components/ui/button";
+import { useFoodTracking } from "@/hooks/useFoodTracking";
 import { Utensils, Dumbbell, Heart, Brain, Zap, TrendingUp } from "lucide-react";
 import healthHero from "@/assets/health-hero.png";
 
