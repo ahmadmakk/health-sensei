@@ -113,7 +113,11 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedData = localStorage.getItem(NUTRITION_DATA_KEY);
     const storedGoals = localStorage.getItem(NUTRITION_GOALS_KEY);
-    
+    const storedPantry = localStorage.getItem(PANTRY_ITEMS_KEY);
+    const storedRecipes = localStorage.getItem(RECIPES_KEY);
+    const storedMealPlans = localStorage.getItem(MEAL_PLANS_KEY);
+    const storedGroceryLists = localStorage.getItem(GROCERY_LISTS_KEY);
+
     if (storedData) {
       try {
         setNutritionData(JSON.parse(storedData));
@@ -121,12 +125,44 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
         console.error('Failed to parse nutrition data:', error);
       }
     }
-    
+
     if (storedGoals) {
       try {
         setNutritionGoals(JSON.parse(storedGoals));
       } catch (error) {
         console.error('Failed to parse nutrition goals:', error);
+      }
+    }
+
+    if (storedPantry) {
+      try {
+        setPantryItems(JSON.parse(storedPantry));
+      } catch (error) {
+        console.error('Failed to parse pantry items:', error);
+      }
+    }
+
+    if (storedRecipes) {
+      try {
+        setRecipes(JSON.parse(storedRecipes));
+      } catch (error) {
+        console.error('Failed to parse recipes:', error);
+      }
+    }
+
+    if (storedMealPlans) {
+      try {
+        setMealPlans(JSON.parse(storedMealPlans));
+      } catch (error) {
+        console.error('Failed to parse meal plans:', error);
+      }
+    }
+
+    if (storedGroceryLists) {
+      try {
+        setGroceryLists(JSON.parse(storedGroceryLists));
+      } catch (error) {
+        console.error('Failed to parse grocery lists:', error);
       }
     }
   }, []);
