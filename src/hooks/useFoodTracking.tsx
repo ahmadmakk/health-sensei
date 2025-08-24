@@ -181,62 +181,26 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
     return nutritionData[date] || null;
   };
 
-  // Mock AI food analysis function
+  // Real AI food analysis using Google Gemini
   const analyzeFood = async (imageData: string, goal: 'lose_weight' | 'maintain' | 'gain_weight'): Promise<FoodItem> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock AI analysis - in real implementation, this would call an AI service
-    const mockFoods = [
-      {
-        name: "Grilled Chicken Breast",
-        calories: 165,
-        macros: { protein: 31, carbs: 0, fat: 3.6 },
-        servingSize: "100g"
-      },
-      {
-        name: "Hamburger with Fries",
-        calories: 1020,
-        macros: { protein: 35, carbs: 120, fat: 45 },
-        servingSize: "1 serving"
-      },
-      {
-        name: "Caesar Salad",
-        calories: 480,
-        macros: { protein: 15, carbs: 25, fat: 38 },
-        servingSize: "1 large bowl"
-      },
-      {
-        name: "Oatmeal with Berries",
-        calories: 320,
-        macros: { protein: 12, carbs: 58, fat: 6 },
-        servingSize: "1 bowl"
-      }
-    ];
+    try {
+      // Dynamic import to avoid bundling issues
+      const { foodAnalysisService } = await import('@/services/foodAnalysisService');
+      return await foodAnalysisService.analyzeFood(imageData, goal);
+    } catch (error) {
+      console.error('AI food analysis failed:', error);
 
-    const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)];
-    
-    // Adjust calories based on goal (conservative for weight loss, aggressive for weight gain)
-    let adjustedCalories = randomFood.calories;
-    let adjustmentNote = '';
-    
-    if (goal === 'lose_weight') {
-      adjustedCalories = Math.round(randomFood.calories * 1.1); // 10% higher estimate
-      adjustmentNote = 'Calorie estimate adjusted higher for weight loss goal';
-    } else if (goal === 'gain_weight') {
-      adjustedCalories = Math.round(randomFood.calories * 0.9); // 10% lower estimate
-      adjustmentNote = 'Calorie estimate adjusted lower for weight gain goal';
+      // Fallback to a basic estimation if AI fails
+      return {
+        id: Date.now().toString(),
+        name: "Unknown Food (Please edit)",
+        calories: goal === 'lose_weight' ? 400 : goal === 'gain_weight' ? 350 : 375,
+        macros: { protein: 20, carbs: 40, fat: 15 },
+        servingSize: "1 portion",
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
     }
-    
-    return {
-      id: Date.now().toString(),
-      name: randomFood.name,
-      calories: adjustedCalories,
-      macros: randomFood.macros,
-      servingSize: randomFood.servingSize,
-      isCustom: true,
-      createdAt: new Date().toISOString(),
-    };
   };
 
   return (
