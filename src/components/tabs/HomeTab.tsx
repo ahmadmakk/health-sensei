@@ -21,22 +21,20 @@ export function HomeTab() {
         <h2 className="text-lg font-semibold text-foreground">Today's Overview</h2>
         
         <div className="grid grid-cols-2 gap-4">
-          <HealthCard
-            title="Calories"
-            value="1,847"
-            subtitle="573 remaining"
-            icon={<Zap className="w-4 h-4 text-warning" />}
-            trend="up"
-          />
-          
-          <HealthCard
-            title="Macros"
-            value="72%"
-            subtitle="On track"
-            icon={<TrendingUp className="w-4 h-4 text-success" />}
-            trend="up"
-          />
-          
+          {/* Circular Calories with Macro Breakdown */}
+          <div className="col-span-2 bg-gradient-card border border-border rounded-lg p-4 shadow-soft">
+            <CircularCalories
+              currentCalories={1847}
+              targetCalories={2420}
+              macros={{
+                carbs: 40,     // 40% carbs (blue)
+                protein: 30,   // 30% protein (red)
+                fat: 30        // 30% fat (yellow)
+              }}
+              className="w-full"
+            />
+          </div>
+
           <HealthCard
             title="Workout"
             value="45min"
@@ -44,7 +42,7 @@ export function HomeTab() {
             icon={<Dumbbell className="w-4 h-4 text-primary" />}
             variant="success"
           />
-          
+
           <HealthCard
             title="Health Score"
             value="87"
