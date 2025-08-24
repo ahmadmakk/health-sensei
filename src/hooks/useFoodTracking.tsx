@@ -102,6 +102,10 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
   const { userInfo } = useUserInfo();
   const [nutritionData, setNutritionData] = useState<Record<string, DailyNutrition>>({});
   const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals>(defaultNutritionGoals);
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+  const [groceryLists, setGroceryLists] = useState<GroceryList[]>([]);
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
