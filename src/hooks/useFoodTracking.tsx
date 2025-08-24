@@ -204,6 +204,28 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // AI text-based food search using Google Gemini
+  const searchFood = async (foodDescription: string, goal: 'lose_weight' | 'maintain' | 'gain_weight'): Promise<FoodItem> => {
+    try {
+      // Dynamic import to avoid bundling issues
+      const { foodAnalysisService } = await import('@/services/foodAnalysisService');
+      return await foodAnalysisService.searchFood(foodDescription, goal);
+    } catch (error) {
+      console.error('AI food search failed:', error);
+
+      // Fallback to a basic estimation if AI fails
+      return {
+        id: Date.now().toString(),
+        name: `${foodDescription} (Estimated)`,
+        calories: goal === 'lose_weight' ? 350 : goal === 'gain_weight' ? 320 : 335,
+        macros: { protein: 18, carbs: 30, fat: 12 },
+        servingSize: "1 serving",
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
+    }
+  };
+
   return (
     <FoodTrackingContext.Provider value={{
       todaysNutrition,
