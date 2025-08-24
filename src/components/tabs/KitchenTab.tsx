@@ -303,11 +303,24 @@ export function KitchenTab() {
         
         <div className="relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search foods..." 
+          <Input
+            placeholder={isSearching ? "Searching with AI..." : "Type food name and press Enter (e.g., 'hamburger', 'grilled chicken')"}
             className="pl-10 h-12"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleSearchKeyPress}
+            disabled={isSearching || isAnalyzing}
           />
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-muted-foreground" />
+          )}
         </div>
+
+        {isSearching && (
+          <div className="text-sm text-muted-foreground text-center py-2">
+            {analysisProgress || 'AI is analyzing your food...'}
+          </div>
+        )}
         
         <div className="grid grid-cols-3 gap-3">
           <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
