@@ -13,20 +13,21 @@ interface FoodTrackingContextType {
   // Daily nutrition data
   todaysNutrition: DailyNutrition;
   nutritionGoals: NutritionGoals;
-  
+
   // Actions
   addMeal: (meal: Omit<MealEntry, 'id' | 'timestamp'>) => void;
   removeMeal: (mealId: string) => void;
   updateMeal: (mealId: string, updates: Partial<MealEntry>) => void;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => void;
-  
+
   // Helpers
   getMacroPercentagesForToday: () => { protein: number; carbs: number; fat: number };
   getCaloriesRemaining: () => number;
   getDailyNutrition: (date: string) => DailyNutrition | null;
-  
-  // AI/Photo analysis
+
+  // AI Analysis
   analyzeFood: (imageData: string, goal: 'lose_weight' | 'maintain' | 'gain_weight') => Promise<FoodItem>;
+  searchFood: (foodDescription: string, goal: 'lose_weight' | 'maintain' | 'gain_weight') => Promise<FoodItem>;
 }
 
 const FoodTrackingContext = createContext<FoodTrackingContextType | undefined>(undefined);
