@@ -6,6 +6,8 @@ const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KE
 
 if (!API_KEY) {
   console.error('Google API key not found. Please set VITE_GOOGLE_API_KEY environment variable.');
+} else {
+  console.log('Google API key found, length:', API_KEY.length);
 }
 
 const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
