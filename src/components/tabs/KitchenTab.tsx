@@ -312,6 +312,141 @@ export function KitchenTab() {
     }
   };
 
+  const startConversationalSearch = async (initialInput: string) => {
+    setIsConversationLoading(true);
+    setShowConversation(true);
+    setSearchQuery('');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const conversation = await conversationalFoodService.startFoodConversation(initialInput, goal);
+      setCurrentConversation(conversation);
+
+      toast({
+        title: "Started food chat",
+        description: "AI is asking for more details to be more precise.",
+      });
+
+    } catch (error: any) {
+      console.error('Failed to start conversation:', error);
+      toast({
+        title: "Conversation failed",
+        description: "Couldn't start AI chat. Try manual entry instead.",
+        variant: "destructive",
+      });
+      setShowConversation(false);
+    } finally {
+      setIsConversationLoading(false);
+    }
+  };
+
+  const continueConversation = async (userInput: string) => {
+    if (!currentConversation || !userInput.trim()) return;
+
+    setIsConversationLoading(true);
+    setConversationInput('');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const updatedConversation = await conversationalFoodService.continueConversation(
+        currentConversation,
+        userInput,
+        goal
+      );
+
+      setCurrentConversation(updatedConversation);
+
+      // If we have enough info, offer to analyze
+      if (updatedConversation.status === 'ready_to_analyze') {
+        setTimeout(() => {
+          analyzeConversation(updatedConversation);
+        }, 1000);
+      }
+
+    } catch (error: any) {
+      console.error('Failed to continue conversation:', error);
+      toast({
+        title: "Conversation error",
+        description: "Something went wrong. Let me try to analyze what we have.",
+        variant: "destructive",
+      });
+
+      if (currentConversation) {
+        analyzeConversation(currentConversation);
+      }
+    } finally {
+      setIsConversationLoading(false);
+    }
+  };
+
+  const analyzeConversation = async (conversation: ConversationState) => {
+    setIsConversationLoading(true);
+    setAnalysisProgress('Analyzing conversation...');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const analyzedFood = await conversationalFoodService.generateFinalAnalysis(conversation, goal);
+
+      // Add the analyzed food as a meal
+      addMeal({
+        foodItem: analyzedFood,
+        quantity: 1,
+        mealType: getCurrentMealType(),
+        source: 'conversation',
+      });
+
+      // Update conversation status
+      setCurrentConversation(prev => prev ? { ...prev, status: 'completed' } : null);
+
+      toast({
+        title: "Food logged successfully!",
+        description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+      });
+
+      // Close conversation after a short delay
+      setTimeout(() => {
+        setShowConversation(false);
+        setCurrentConversation(null);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Final analysis failed:', error);
+      toast({
+        title: "Analysis failed",
+        description: "Couldn't complete the analysis. Try manual entry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConversationLoading(false);
+      setAnalysisProgress('');
+    }
+  };
+
+  const handleConversationKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && conversationInput.trim() && !isConversationLoading) {
+      continueConversation(conversationInput);
+    }
+  };
+
+  const handleQuickSearchKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchQuery.trim()) {
+      startConversationalSearch(searchQuery);
+    }
+  };
+
+  // Auto-scroll to bottom of conversation
+  useEffect(() => {
+    if (conversationEndRef.current) {
+      conversationEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentConversation?.messages]);
+
   const getCurrentMealType = (): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
     const hour = new Date().getHours();
     if (hour < 10) return 'breakfast';
