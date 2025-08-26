@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { useFoodTracking } from "@/hooks/useFoodTracking";
 import { useUserInfo } from "@/hooks/useUserInfo";
-import { Plus, Search, Scan, Camera, Pill, Target, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Scan, Camera, Pill, Target, Loader2, Trash2, MessageCircle, Send } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { conversationalFoodService, ConversationState, ConversationMessage } from "@/services/conversationalFoodService";
 
 export function KitchenTab() {
   const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood, searchFood } = useFoodTracking();
