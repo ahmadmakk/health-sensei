@@ -183,7 +183,7 @@ export function KitchenTab() {
     if (!query.trim()) return;
 
     setIsSearching(true);
-    setAnalysisProgress('Searching with AI...');
+    setAnalysisProgress('Connecting to AI...');
 
     try {
       // Show search start notification
@@ -191,6 +191,8 @@ export function KitchenTab() {
         title: "Searching for food...",
         description: `AI is analyzing "${query}" and calculating nutrition.`,
       });
+
+      setAnalysisProgress('Analyzing with AI...');
 
       // Determine user's goal from their info
       const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
@@ -208,19 +210,40 @@ export function KitchenTab() {
         source: 'search',
       });
 
-      toast({
-        title: "Food found!",
-        description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
-      });
+      // Check if this was a fallback result
+      const isFallback = analyzedFood.name.includes('Network Error') ||
+                        analyzedFood.name.includes('Estimated');
+
+      if (isFallback) {
+        toast({
+          title: "Food added (estimated)",
+          description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal). AI analysis failed, but we provided a reasonable estimate.`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Food found!",
+          description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+        });
+      }
 
       // Clear search
       setSearchQuery('');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Food search error:', error);
+
+      // Provide more specific error messages
+      let errorMessage = "AI couldn't analyze this food.";
+      if (error.message?.includes('fetch')) {
+        errorMessage = "Network connection issue. Check your internet and try again.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "AI analysis is taking too long. Try again or use manual entry.";
+      }
+
       toast({
         title: "Search failed",
-        description: "AI couldn't find this food. Try manual entry or a photo instead.",
+        description: `${errorMessage} Try manual entry or taking a photo instead.`,
         variant: "destructive",
       });
     } finally {
