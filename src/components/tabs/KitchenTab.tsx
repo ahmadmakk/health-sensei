@@ -372,16 +372,32 @@ export function KitchenTab() {
         <div className="relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder={isSearching ? "Searching with AI..." : "Type food name and press Enter (e.g., 'hamburger', 'grilled chicken')"}
-            className="pl-10 h-12"
+            placeholder={
+              isSearching ? "Searching with AI..." :
+              apiStatus === 'offline' ? "Type food name and press Enter (AI offline - using estimates)" :
+              apiStatus === 'checking' ? "Checking AI status..." :
+              "Type food name and press Enter (e.g., 'hamburger', 'grilled chicken')"
+            }
+            className="pl-10 pr-16 h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleSearchKeyPress}
-            disabled={isSearching || isAnalyzing}
+            disabled={isSearching || isAnalyzing || apiStatus === 'checking'}
           />
-          {isSearching && (
-            <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-muted-foreground" />
-          )}
+          <div className="absolute right-3 top-3 flex items-center gap-2">
+            {isSearching && (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            )}
+            {apiStatus === 'checking' && (
+              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" title="Checking AI status..." />
+            )}
+            {apiStatus === 'online' && (
+              <div className="w-2 h-2 rounded-full bg-green-500" title="AI available" />
+            )}
+            {apiStatus === 'offline' && (
+              <div className="w-2 h-2 rounded-full bg-red-500" title="AI offline - using estimates" />
+            )}
+          </div>
         </div>
 
         {isSearching && (
