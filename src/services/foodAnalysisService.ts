@@ -36,6 +36,8 @@ export class FoodAnalysisService {
     }
 
     try {
+      console.log('Starting photo analysis...');
+
       // Convert base64 image data to the format Gemini expects
       const base64Data = imageData.split(',')[1];
 
@@ -71,17 +73,31 @@ export class FoodAnalysisService {
         },
       };
 
-      const result = await this.model.generateContent([prompt, imagePart]);
+      // Add timeout to photo analysis as well
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Photo analysis timeout')), 15000)
+      );
+
+      const requestPromise = this.model.generateContent([prompt, imagePart]);
+
+      const result = await Promise.race([requestPromise, timeoutPromise]) as any;
       const response = result.response;
       const text = response.text();
+
+      console.log('Photo analysis response received');
 
       // Extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('Could not parse AI response');
+        throw new Error('Could not parse AI response - no JSON found');
       }
 
       const analysis: FoodAnalysisResult = JSON.parse(jsonMatch[0]);
+
+      // Validate the analysis
+      if (!analysis.name || typeof analysis.calories !== 'number') {
+        throw new Error('Invalid AI response format');
+      }
 
       // Apply goal-based calorie adjustments
       const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
@@ -92,22 +108,33 @@ export class FoodAnalysisService {
         name: analysis.name,
         calories: adjustedCalories,
         macros: {
-          protein: analysis.protein,
-          carbs: analysis.carbs,
-          fat: analysis.fat,
+          protein: analysis.protein || 0,
+          carbs: analysis.carbs || 0,
+          fat: analysis.fat || 0,
         },
-        servingSize: analysis.servingSize,
+        servingSize: analysis.servingSize || '1 serving',
         isCustom: true,
         createdAt: new Date().toISOString(),
       };
 
+      console.log('Successfully analyzed photo:', foodItem.name);
       return foodItem;
 
-    } catch (error) {
-      console.error('Food analysis failed:', error);
+    } catch (error: any) {
+      console.error('Photo analysis failed:', error);
 
-      // Fallback to mock data if AI fails
-      return this.getFallbackFood(goal);
+      // Provide more specific error messaging
+      if (error.message?.includes('Failed to fetch')) {
+        console.error('Network error during photo analysis - check internet connection');
+      } else if (error.message?.includes('timeout')) {
+        console.error('Photo analysis timed out - image might be too large or API is slow');
+      }
+
+      // Enhanced fallback with error context
+      const fallbackFood = this.getFallbackFood(goal);
+      fallbackFood.name = `${fallbackFood.name} (Analysis Failed)`;
+
+      return fallbackFood;
     }
   }
 
