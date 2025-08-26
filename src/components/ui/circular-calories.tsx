@@ -13,19 +13,19 @@ interface CircularCaloriesProps {
   className?: string;
 }
 
-export function CircularCalories({ 
-  currentCalories, 
-  targetCalories, 
-  macros, 
-  className 
+export function CircularCalories({
+  currentCalories,
+  targetCalories,
+  macros,
+  className
 }: CircularCaloriesProps) {
   const progress = Math.min((currentCalories / targetCalories) * 100, 100);
   const remaining = Math.max(targetCalories - currentCalories, 0);
-  
+
   // Calculate the circumference of the circle
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
-  
+
   // Calculate arc lengths for each macro based on current calories consumed
   const totalMacroPercentage = macros.carbs + macros.protein + macros.fat;
   const normalizedMacros = totalMacroPercentage > 0 ? {
@@ -33,16 +33,30 @@ export function CircularCalories({
     protein: (macros.protein / totalMacroPercentage) * progress,
     fat: (macros.fat / totalMacroPercentage) * progress
   } : { carbs: 0, protein: 0, fat: 0 };
-  
+
   // Convert percentages to stroke-dasharray values
   const carbsLength = (normalizedMacros.carbs / 100) * circumference;
   const proteinLength = (normalizedMacros.protein / 100) * circumference;
   const fatLength = (normalizedMacros.fat / 100) * circumference;
-  
+
   // Calculate cumulative offsets for proper positioning
   const carbsOffset = circumference * 0.25; // Start at top
   const proteinOffset = carbsOffset - carbsLength;
   const fatOffset = proteinOffset - proteinLength;
+
+  // Dynamic color calculation based on percentage completion
+  const getColorForPercentage = (percentage: number): string => {
+    if (percentage < 25) return '#EF4444'; // Red for very low
+    if (percentage < 50) return '#F97316'; // Orange for low
+    if (percentage < 75) return '#F59E0B'; // Yellow for medium
+    if (percentage <= 100) return '#22C55E'; // Green for good
+    if (percentage <= 120) return '#3B82F6'; // Blue for slightly over
+    return '#8B5CF6'; // Purple for way over
+  };
+
+  const carbsColor = getColorForPercentage(macros.carbs);
+  const proteinColor = getColorForPercentage(macros.protein);
+  const fatColor = getColorForPercentage(macros.fat);
   
   return (
     <div className={cn("flex flex-col items-center space-y-2", className)}>
