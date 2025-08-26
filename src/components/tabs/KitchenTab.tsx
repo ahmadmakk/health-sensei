@@ -94,11 +94,22 @@ export function KitchenTab() {
             description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
           });
 
-        } catch (analysisError) {
+        } catch (analysisError: any) {
           console.error('Food analysis error:', analysisError);
+
+          // Provide more specific error messages for photo analysis
+          let errorMessage = "AI couldn't analyze this image.";
+          if (analysisError.message?.includes('fetch')) {
+            errorMessage = "Network error during analysis. Check your connection and try again.";
+          } else if (analysisError.message?.includes('timeout')) {
+            errorMessage = "Photo analysis timed out. Try a smaller image or manual entry.";
+          } else if (analysisError.message?.includes('parse')) {
+            errorMessage = "AI couldn't understand the image. Try a clearer photo or manual entry.";
+          }
+
           toast({
-            title: "Analysis failed",
-            description: "AI couldn't analyze this image. You can add the food manually instead.",
+            title: "Photo analysis failed",
+            description: `${errorMessage} You can add the food manually instead.`,
             variant: "destructive",
           });
         }
