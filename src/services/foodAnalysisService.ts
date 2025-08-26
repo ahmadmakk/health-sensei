@@ -344,29 +344,76 @@ export class FoodAnalysisService {
     foodDescription: string,
     goal: 'lose_weight' | 'maintain' | 'gain_weight'
   ): FoodItem {
-    // Basic fallback based on common food types
-    const description = foodDescription.toLowerCase();
+    // Enhanced fallback based on common food types and keywords
+    const description = foodDescription.toLowerCase().trim();
     let fallbackFood;
 
+    // Meat and protein
     if (description.includes('burger') || description.includes('hamburger')) {
-      fallbackFood = { name: "Hamburger", calories: 540, macros: { protein: 25, carbs: 40, fat: 31 }, servingSize: "1 medium burger" };
+      fallbackFood = { name: "Hamburger with Bun", calories: 540, macros: { protein: 25, carbs: 40, fat: 31 }, servingSize: "1 medium burger" };
+    } else if (description.includes('chicken breast') || description.includes('grilled chicken')) {
+      fallbackFood = { name: "Grilled Chicken Breast", calories: 165, macros: { protein: 31, carbs: 0, fat: 4 }, servingSize: "4oz serving" };
     } else if (description.includes('chicken')) {
-      fallbackFood = { name: "Grilled Chicken", calories: 165, macros: { protein: 31, carbs: 0, fat: 4 }, servingSize: "4oz serving" };
+      fallbackFood = { name: "Chicken Breast", calories: 230, macros: { protein: 25, carbs: 0, fat: 13 }, servingSize: "4oz serving" };
+    } else if (description.includes('salmon') || description.includes('fish')) {
+      fallbackFood = { name: "Grilled Salmon", calories: 210, macros: { protein: 25, carbs: 0, fat: 12 }, servingSize: "4oz serving" };
+    } else if (description.includes('beef') || description.includes('steak')) {
+      fallbackFood = { name: "Beef Sirloin", calories: 180, macros: { protein: 26, carbs: 0, fat: 8 }, servingSize: "4oz serving" };
+    } else if (description.includes('egg')) {
+      fallbackFood = { name: "Large Eggs", calories: 140, macros: { protein: 12, carbs: 1, fat: 10 }, servingSize: "2 large eggs" };
+
+    // Vegetables and salads
+    } else if (description.includes('caesar salad')) {
+      fallbackFood = { name: "Caesar Salad", calories: 280, macros: { protein: 12, carbs: 18, fat: 20 }, servingSize: "1 large bowl" };
     } else if (description.includes('salad')) {
       fallbackFood = { name: "Garden Salad", calories: 120, macros: { protein: 8, carbs: 15, fat: 6 }, servingSize: "1 bowl" };
-    } else if (description.includes('apple') || description.includes('fruit')) {
-      fallbackFood = { name: "Apple", calories: 80, macros: { protein: 0, carbs: 21, fat: 0 }, servingSize: "1 medium" };
-    } else if (description.includes('rice')) {
-      fallbackFood = { name: "White Rice", calories: 130, macros: { protein: 3, carbs: 28, fat: 0 }, servingSize: "1/2 cup cooked" };
+    } else if (description.includes('broccoli')) {
+      fallbackFood = { name: "Steamed Broccoli", calories: 30, macros: { protein: 3, carbs: 6, fat: 0 }, servingSize: "1 cup" };
+
+    // Fruits
+    } else if (description.includes('apple')) {
+      fallbackFood = { name: "Medium Apple", calories: 80, macros: { protein: 0, carbs: 21, fat: 0 }, servingSize: "1 medium" };
+    } else if (description.includes('banana')) {
+      fallbackFood = { name: "Medium Banana", calories: 105, macros: { protein: 1, carbs: 27, fat: 0 }, servingSize: "1 medium" };
+    } else if (description.includes('orange')) {
+      fallbackFood = { name: "Medium Orange", calories: 60, macros: { protein: 1, carbs: 15, fat: 0 }, servingSize: "1 medium" };
+
+    // Grains and starches
+    } else if (description.includes('rice') || description.includes('brown rice')) {
+      fallbackFood = { name: "Cooked Brown Rice", calories: 110, macros: { protein: 3, carbs: 23, fat: 1 }, servingSize: "1/2 cup cooked" };
+    } else if (description.includes('pasta')) {
+      fallbackFood = { name: "Cooked Pasta", calories: 180, macros: { protein: 7, carbs: 36, fat: 1 }, servingSize: "1 cup cooked" };
+    } else if (description.includes('bread')) {
+      fallbackFood = { name: "Whole Wheat Bread", calories: 80, macros: { protein: 4, carbs: 14, fat: 1 }, servingSize: "1 slice" };
+    } else if (description.includes('oatmeal')) {
+      fallbackFood = { name: "Oatmeal", calories: 150, macros: { protein: 5, carbs: 27, fat: 3 }, servingSize: "1 cup cooked" };
+
+    // Dairy
+    } else if (description.includes('milk')) {
+      fallbackFood = { name: "Low-fat Milk", calories: 120, macros: { protein: 8, carbs: 12, fat: 5 }, servingSize: "1 cup" };
+    } else if (description.includes('yogurt')) {
+      fallbackFood = { name: "Greek Yogurt", calories: 130, macros: { protein: 15, carbs: 9, fat: 4 }, servingSize: "1 cup" };
+    } else if (description.includes('cheese')) {
+      fallbackFood = { name: "Cheddar Cheese", calories: 115, macros: { protein: 7, carbs: 1, fat: 9 }, servingSize: "1 oz" };
+
+    // Snacks and fast food
+    } else if (description.includes('pizza')) {
+      fallbackFood = { name: "Pizza Slice", calories: 285, macros: { protein: 12, carbs: 36, fat: 10 }, servingSize: "1 slice" };
+    } else if (description.includes('fries') || description.includes('french fries')) {
+      fallbackFood = { name: "French Fries", calories: 365, macros: { protein: 4, carbs: 63, fat: 17 }, servingSize: "medium serving" };
+    } else if (description.includes('sandwich')) {
+      fallbackFood = { name: "Turkey Sandwich", calories: 320, macros: { protein: 20, carbs: 28, fat: 14 }, servingSize: "1 sandwich" };
+
+    // Default fallback
     } else {
-      fallbackFood = { name: "Mixed Food", calories: 300, macros: { protein: 15, carbs: 35, fat: 12 }, servingSize: "1 serving" };
+      fallbackFood = { name: description.charAt(0).toUpperCase() + description.slice(1), calories: 250, macros: { protein: 12, carbs: 30, fat: 8 }, servingSize: "1 serving" };
     }
 
     const adjustedCalories = this.applyGoalAdjustment(fallbackFood.calories, goal);
 
     return {
       id: Date.now().toString(),
-      name: `${fallbackFood.name} (Estimated)`,
+      name: `${fallbackFood.name} (Network Error - Estimated)`,
       calories: adjustedCalories,
       macros: fallbackFood.macros,
       servingSize: fallbackFood.servingSize,
