@@ -77,12 +77,12 @@ export function CircularCalories({
             className="opacity-20"
           />
           
-          {/* Carbs (Blue) */}
+          {/* Carbs */}
           <circle
             cx="50"
             cy="50"
             r={radius}
-            stroke="#3B82F6" // Blue for carbs
+            stroke={carbsColor}
             strokeWidth="8"
             fill="none"
             strokeLinecap="round"
@@ -90,13 +90,13 @@ export function CircularCalories({
             strokeDashoffset={carbsOffset}
             className="transition-all duration-500 ease-out"
           />
-          
-          {/* Protein (Red) */}
+
+          {/* Protein */}
           <circle
             cx="50"
             cy="50"
             r={radius}
-            stroke="#EF4444" // Red for protein
+            stroke={proteinColor}
             strokeWidth="8"
             fill="none"
             strokeLinecap="round"
@@ -104,13 +104,13 @@ export function CircularCalories({
             strokeDashoffset={proteinOffset}
             className="transition-all duration-500 ease-out"
           />
-          
-          {/* Fat (Yellow) */}
+
+          {/* Fat */}
           <circle
             cx="50"
             cy="50"
             r={radius}
-            stroke="#F59E0B" // Yellow for fat
+            stroke={fatColor}
             strokeWidth="8"
             fill="none"
             strokeLinecap="round"
