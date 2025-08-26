@@ -121,77 +121,123 @@ export class FoodAnalysisService {
       return this.getFallbackFoodFromText(foodDescription, goal);
     }
 
-    try {
-      const prompt = `
-        Analyze the food described as: "${foodDescription}"
+    // Retry logic for network issues
+    const maxRetries = 2;
+    let lastError: any;
 
-        Please provide detailed nutritional information for a typical serving of this food.
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempting food search (attempt ${attempt}/${maxRetries}) for: "${foodDescription}"`);
 
-        Consider:
-        1. Standard serving size for this food item
-        2. Typical preparation method (if not specified, assume most common)
-        3. Accurate calorie and macro estimates
+        const prompt = `
+          Analyze the food described as: "${foodDescription}"
 
-        ${this.getGoalSpecificPrompt(goal)}
+          Please provide detailed nutritional information for a typical serving of this food.
 
-        Return your analysis in this exact JSON format:
-        {
-          "name": "Properly formatted food name",
-          "calories": number,
-          "protein": number (grams),
-          "carbs": number (grams),
-          "fat": number (grams),
-          "servingSize": "standard serving description",
-          "confidence": number (0-100)
+          Consider:
+          1. Standard serving size for this food item
+          2. Typical preparation method (if not specified, assume most common)
+          3. Accurate calorie and macro estimates
+
+          ${this.getGoalSpecificPrompt(goal)}
+
+          Return your analysis in this exact JSON format:
+          {
+            "name": "Properly formatted food name",
+            "calories": number,
+            "protein": number (grams),
+            "carbs": number (grams),
+            "fat": number (grams),
+            "servingSize": "standard serving description",
+            "confidence": number (0-100)
+          }
+
+          Examples:
+          - "hamburger" → "Hamburger with Bun", calories for 1 medium burger
+          - "chicken" → "Grilled Chicken Breast", calories for 4oz serving
+          - "apple" → "Medium Apple", calories for 1 medium apple
+
+          Be realistic about portion sizes and accurate with nutritional data.
+          If the description is too vague, make reasonable assumptions and note lower confidence.
+        `;
+
+        // Add timeout to the request
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+
+        const requestPromise = this.model.generateContent(prompt);
+
+        const result = await Promise.race([requestPromise, timeoutPromise]) as any;
+        const response = result.response;
+        const text = response.text();
+
+        console.log('AI Response received:', text.substring(0, 200) + '...');
+
+        // Extract JSON from the response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('Could not parse AI response - no JSON found');
         }
 
-        Examples:
-        - "hamburger" → "Hamburger with Bun", calories for 1 medium burger
-        - "chicken" → "Grilled Chicken Breast", calories for 4oz serving
-        - "apple" → "Medium Apple", calories for 1 medium apple
+        const analysis: FoodAnalysisResult = JSON.parse(jsonMatch[0]);
 
-        Be realistic about portion sizes and accurate with nutritional data.
-        If the description is too vague, make reasonable assumptions and note lower confidence.
-      `;
+        // Validate the analysis
+        if (!analysis.name || typeof analysis.calories !== 'number') {
+          throw new Error('Invalid AI response format');
+        }
 
-      const result = await this.model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+        // Apply goal-based calorie adjustments
+        const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
 
-      // Extract JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Could not parse AI response');
+        // Convert to FoodItem format
+        const foodItem: FoodItem = {
+          id: Date.now().toString(),
+          name: analysis.name,
+          calories: adjustedCalories,
+          macros: {
+            protein: analysis.protein || 0,
+            carbs: analysis.carbs || 0,
+            fat: analysis.fat || 0,
+          },
+          servingSize: analysis.servingSize || '1 serving',
+          isCustom: true,
+          createdAt: new Date().toISOString(),
+        };
+
+        console.log('Successfully analyzed food:', foodItem.name);
+        return foodItem;
+
+      } catch (error: any) {
+        lastError = error;
+        console.error(`Food search attempt ${attempt} failed:`, error);
+
+        // Check for specific error types
+        if (error.message?.includes('Failed to fetch')) {
+          console.error('Network error detected - check internet connection and API access');
+        } else if (error.message?.includes('API_KEY')) {
+          console.error('API key error detected');
+          break; // Don't retry API key errors
+        } else if (error.message?.includes('timeout')) {
+          console.error('Request timeout - API might be slow');
+        }
+
+        // Wait before retry (except on last attempt)
+        if (attempt < maxRetries) {
+          console.log(`Waiting 1 second before retry...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-
-      const analysis: FoodAnalysisResult = JSON.parse(jsonMatch[0]);
-
-      // Apply goal-based calorie adjustments
-      const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
-
-      // Convert to FoodItem format
-      const foodItem: FoodItem = {
-        id: Date.now().toString(),
-        name: analysis.name,
-        calories: adjustedCalories,
-        macros: {
-          protein: analysis.protein,
-          carbs: analysis.carbs,
-          fat: analysis.fat,
-        },
-        servingSize: analysis.servingSize,
-        isCustom: true,
-        createdAt: new Date().toISOString(),
-      };
-
-      return foodItem;
-
-    } catch (error) {
-      console.error('Food search failed:', error);
-
-      // Fallback to mock data if AI fails
-      return this.getFallbackFoodFromText(foodDescription, goal);
     }
+
+    console.error(`All ${maxRetries} attempts failed. Last error:`, lastError);
+    console.log('Falling back to local food database...');
+
+    // Enhanced fallback with error context
+    const fallbackFood = this.getFallbackFoodFromText(foodDescription, goal);
+    fallbackFood.name = `${fallbackFood.name} (Network Error - Estimated)`;
+
+    return fallbackFood;
   }
 
   private getGoalSpecificPrompt(goal: 'lose_weight' | 'maintain' | 'gain_weight'): string {
