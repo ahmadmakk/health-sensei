@@ -139,15 +139,15 @@ export function CircularCalories({
       {/* Macro legend */}
       <div className="flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: carbsColor }} />
           <span className="text-muted-foreground">Carbs {macros.carbs.toFixed(0)}%</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: proteinColor }} />
           <span className="text-muted-foreground">Protein {macros.protein.toFixed(0)}%</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: fatColor }} />
           <span className="text-muted-foreground">Fat {macros.fat.toFixed(0)}%</span>
         </div>
       </div>
