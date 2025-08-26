@@ -383,11 +383,39 @@ export class FoodAnalysisService {
     }
 
     try {
-      const result = await this.model.generateContent("Test connection. Reply with 'OK'.");
-      return result.response.text().includes('OK');
+      console.log('Running API health check...');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Health check timeout')), 5000)
+      );
+
+      const requestPromise = this.model.generateContent("Test connection. Reply with 'OK'.");
+      const result = await Promise.race([requestPromise, timeoutPromise]) as any;
+
+      const response = result.response.text();
+      const isHealthy = response.includes('OK');
+      console.log('API health check result:', isHealthy ? 'HEALTHY' : 'UNHEALTHY');
+      return isHealthy;
     } catch (error) {
       console.error('AI service health check failed:', error);
       return false;
+    }
+  }
+
+  // Test basic connectivity
+  async testConnectivity(): Promise<{success: boolean; error?: string}> {
+    try {
+      // Test basic fetch to Google's API endpoint
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + API_KEY);
+      if (response.ok) {
+        console.log('Google API connectivity test: SUCCESS');
+        return { success: true };
+      } else {
+        console.log('Google API connectivity test: FAILED - Status:', response.status);
+        return { success: false, error: `HTTP ${response.status}` };
+      }
+    } catch (error: any) {
+      console.log('Google API connectivity test: FAILED - Network error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 }
