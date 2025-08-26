@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useFoodTracking } from "@/hooks/useFoodTracking";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Plus, Search, Scan, Camera, Pill, Target, Loader2, Trash2 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export function KitchenTab() {
   const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood, searchFood } = useFoodTracking();
