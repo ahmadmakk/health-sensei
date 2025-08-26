@@ -19,6 +19,7 @@ export function KitchenTab() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline' | 'unknown'>('unknown');
   const [manualFood, setManualFood] = useState({
     name: '',
     calories: '',
