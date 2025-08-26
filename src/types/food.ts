@@ -27,7 +27,7 @@ export interface MealEntry {
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   notes?: string;
   imageUrl?: string;          // for photo-logged meals
-  source: 'manual' | 'photo' | 'barcode' | 'search';
+  source: 'manual' | 'photo' | 'barcode' | 'search' | 'conversation';
 }
 
 export interface DailyNutrition {
