@@ -514,22 +514,22 @@ export function KitchenTab() {
         <h2 className="text-lg font-semibold text-foreground">Log Your Meal</h2>
         
         <div className="relative">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+          <MessageCircle className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder={
-              isSearching ? "Searching with AI..." :
-              apiStatus === 'offline' ? "Type food name and press Enter (AI offline - using estimates)" :
+              isConversationLoading ? "Starting AI chat..." :
+              apiStatus === 'offline' ? "Type food name for AI chat (offline - using estimates)" :
               apiStatus === 'checking' ? "Checking AI status..." :
-              "Type food name and press Enter (e.g., 'hamburger', 'grilled chicken')"
+              "Type food name for AI chat (e.g., 'hamburger', 'chicken')"
             }
             className="pl-10 pr-16 h-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleSearchKeyPress}
-            disabled={isSearching || isAnalyzing || apiStatus === 'checking'}
+            onKeyPress={handleQuickSearchKeyPress}
+            disabled={isConversationLoading || isAnalyzing || apiStatus === 'checking' || showConversation}
           />
           <div className="absolute right-3 top-3 flex items-center gap-2">
-            {isSearching && (
+            {isConversationLoading && (
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             )}
             {apiStatus === 'checking' && (
@@ -543,6 +543,95 @@ export function KitchenTab() {
             )}
           </div>
         </div>
+
+        {/* Conversational AI Chat Interface */}
+        {showConversation && currentConversation && (
+          <div className="bg-gradient-card border border-border rounded-lg p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                AI Food Chat
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowConversation(false);
+                  setCurrentConversation(null);
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+
+            {/* Conversation Messages */}
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {currentConversation.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg text-sm ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+
+              {isConversationLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-muted-foreground p-3 rounded-lg text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    {analysisProgress || 'AI is thinking...'}
+                  </div>
+                </div>
+              )}
+
+              <div ref={conversationEndRef} />
+            </div>
+
+            {/* Input for continuing conversation */}
+            {currentConversation.status === 'collecting_info' && (
+              <div className="relative">
+                <Input
+                  placeholder="Type your response..."
+                  value={conversationInput}
+                  onChange={(e) => setConversationInput(e.target.value)}
+                  onKeyPress={handleConversationKeyPress}
+                  disabled={isConversationLoading}
+                  className="pr-10"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute right-1 top-1 h-8 w-8 p-0"
+                  onClick={() => continueConversation(conversationInput)}
+                  disabled={!conversationInput.trim() || isConversationLoading}
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+
+            {currentConversation.status === 'ready_to_analyze' && (
+              <div className="text-center text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                Analyzing your food details...
+              </div>
+            )}
+
+            {currentConversation.status === 'completed' && (
+              <div className="text-center text-sm text-green-600">
+                ✓ Food logged successfully!
+              </div>
+            )}
+          </div>
+        )}
 
         {isSearching && (
           <div className="text-sm text-muted-foreground text-center py-2">
