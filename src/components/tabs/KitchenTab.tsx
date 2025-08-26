@@ -21,6 +21,13 @@ export function KitchenTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline' | 'unknown'>('unknown');
+
+  // Conversational AI state
+  const [currentConversation, setCurrentConversation] = useState<ConversationState | null>(null);
+  const [showConversation, setShowConversation] = useState(false);
+  const [conversationInput, setConversationInput] = useState('');
+  const [isConversationLoading, setIsConversationLoading] = useState(false);
+
   const [manualFood, setManualFood] = useState({
     name: '',
     calories: '',
@@ -31,6 +38,7 @@ export function KitchenTab() {
     quantity: '1'
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   // Check API connectivity when component mounts
   useEffect(() => {
