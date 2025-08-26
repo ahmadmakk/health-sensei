@@ -31,6 +31,39 @@ export function KitchenTab() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check API connectivity when component mounts
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      setApiStatus('checking');
+      try {
+        const { foodAnalysisService } = await import('@/services/foodAnalysisService');
+        const connectivity = await foodAnalysisService.testConnectivity();
+
+        if (connectivity.success) {
+          setApiStatus('online');
+          console.log('✅ AI food analysis is available');
+        } else {
+          setApiStatus('offline');
+          console.log('❌ AI food analysis is unavailable:', connectivity.error);
+
+          // Show a non-intrusive notification about offline mode
+          setTimeout(() => {
+            toast({
+              title: "AI temporarily unavailable",
+              description: "Food analysis will use local estimates. Check your internet connection.",
+              variant: "default",
+            });
+          }, 1000);
+        }
+      } catch (error) {
+        setApiStatus('offline');
+        console.log('❌ AI service check failed:', error);
+      }
+    };
+
+    checkApiStatus();
+  }, []);
+
   const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
