@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Heart, Brain, Zap, Shield, AlertCircle, TrendingUp } from "lucide-react";
 import healthAnatomy from "@/assets/health-anatomy.png";
+import { useUserInfo } from "@/hooks/useUserInfo";
 
 export function HealthTab() {
+  const { userInfo } = useUserInfo();
+
   const organScores = [
     { name: "Cardiovascular", score: 92, icon: Heart, status: "excellent", color: "success" },
     { name: "Liver", score: 78, icon: Shield, status: "good", color: "primary" },
@@ -14,15 +17,40 @@ export function HealthTab() {
     { name: "Respiratory", score: 82, icon: Zap, status: "good", color: "primary" }
   ];
 
+  const isMetric = (userInfo.preferredUnits || 'metric') === 'metric';
+  const weightKg = typeof userInfo.weight === 'number' ? userInfo.weight : undefined;
+  const heightCm = typeof userInfo.height === 'number' ? userInfo.height : undefined;
+
+  const weightDisplay = (() => {
+    if (!weightKg) return '—';
+    if (isMetric) return `${Math.round(weightKg)} kg`;
+    const lbs = weightKg * 2.20462;
+    return `${Math.round(lbs)} lbs`;
+  })();
+
+  const bmiValue = (() => {
+    if (!weightKg || !heightCm) return undefined;
+    const h = heightCm / 100; // meters
+    return +(weightKg / (h * h)).toFixed(1);
+  })();
+
+  const bmiCategory = (() => {
+    if (bmiValue === undefined) return 'Add height & weight in Personal Info';
+    if (bmiValue < 18.5) return 'Underweight';
+    if (bmiValue < 25) return 'Normal';
+    if (bmiValue < 30) return 'Overweight';
+    return 'Obese';
+  })();
+
   return (
     <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-foreground">Health</h1>
-        
+
         {/* Overall Score */}
-        <HealthCard 
-          title="Overall Health" 
+        <HealthCard
+          title="Overall Health"
           value="87"
           subtitle="Excellent condition"
           variant="primary"
@@ -43,11 +71,11 @@ export function HealthTab() {
           <h2 className="text-lg font-semibold text-foreground">Body Systems</h2>
           <Button size="sm" variant="outline">3D View</Button>
         </div>
-        
+
         <div className="bg-gradient-card rounded-2xl border border-border p-6 text-center">
-          <img 
-            src={healthAnatomy} 
-            alt="3D Human Anatomy" 
+          <img
+            src={healthAnatomy}
+            alt="3D Human Anatomy"
             className="w-32 h-32 mx-auto mb-4 opacity-80"
           />
           <p className="text-sm text-muted-foreground mb-4">
@@ -62,17 +90,17 @@ export function HealthTab() {
       {/* Organ Scores */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">System Scores</h2>
-        
+
         <div className="grid grid-cols-1 gap-3">
           {organScores.map((organ, index) => {
             const Icon = organ.icon;
             const getVariant = (score: number) => {
               if (score >= 85) return "success";
-              if (score >= 70) return "default"; 
+              if (score >= 70) return "default";
               if (score >= 60) return "warning";
               return "danger";
             };
-            
+
             return (
               <div key={index} className="p-4 bg-gradient-card rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-3">
@@ -85,13 +113,13 @@ export function HealthTab() {
                       <p className="text-sm text-muted-foreground capitalize">{organ.status}</p>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <div className="text-xl font-bold text-foreground">{organ.score}</div>
                     <div className="text-xs text-muted-foreground">/ 100</div>
                   </div>
                 </div>
-                
+
                 <Progress value={organ.score} className="h-2" />
               </div>
             );
@@ -102,9 +130,9 @@ export function HealthTab() {
       {/* Health Insights */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Health Insights</h2>
-        
-        <HealthCard 
-          title="Risk Factors" 
+
+        <HealthCard
+          title="Risk Factors"
           value="2 Active"
           variant="warning"
           icon={<AlertCircle className="w-4 h-4" />}
@@ -120,9 +148,9 @@ export function HealthTab() {
             </div>
           </div>
         </HealthCard>
-        
-        <HealthCard 
-          title="Recommendations" 
+
+        <HealthCard
+          title="Recommendations"
           value="3 Actions"
           variant="success"
         >
@@ -140,7 +168,7 @@ export function HealthTab() {
           <h2 className="text-lg font-semibold text-foreground">Vitals</h2>
           <Button size="sm" variant="outline">Log Data</Button>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-3">
           <HealthCard
             title="Blood Pressure"
@@ -148,25 +176,25 @@ export function HealthTab() {
             subtitle="Normal"
             trend="neutral"
           />
-          
+
           <HealthCard
             title="Resting HR"
             value="62 bpm"
             subtitle="Excellent"
             trend="down"
           />
-          
+
           <HealthCard
             title="Weight"
-            value="175 lbs"
-            subtitle="Stable"
+            value={weightDisplay}
+            subtitle={weightKg ? (isMetric ? 'Metric' : 'Imperial') : 'Set in Personal Info'}
             trend="neutral"
           />
-          
+
           <HealthCard
             title="BMI"
-            value="23.2"
-            subtitle="Normal"
+            value={bmiValue !== undefined ? bmiValue : '—'}
+            subtitle={bmiCategory}
             trend="neutral"
           />
         </div>
