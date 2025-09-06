@@ -16,6 +16,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const { isOnboardingComplete } = useUserInfo();
   const [showOnboarding, setShowOnboarding] = useState(!isOnboardingComplete);
+  const [showMenu, setShowMenu] = useState(false);
 
   const renderActiveTab = () => {
     switch (activeTab) {
