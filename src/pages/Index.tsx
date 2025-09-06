@@ -18,6 +18,24 @@ const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(!isOnboardingComplete);
   const [showMenu, setShowMenu] = useState(false);
 
+  // Listen for global navigation events from child components
+  useEffect(() => {
+    const navHandler = (e: any) => {
+      if (e?.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    const menuHandler = () => setShowMenu(true);
+
+    window.addEventListener('navigate', navHandler);
+    window.addEventListener('open-main-menu', menuHandler);
+
+    return () => {
+      window.removeEventListener('navigate', navHandler);
+      window.removeEventListener('open-main-menu', menuHandler);
+    };
+  }, []);
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case "home":
