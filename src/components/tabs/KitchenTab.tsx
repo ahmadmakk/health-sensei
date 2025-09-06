@@ -326,8 +326,15 @@ export function KitchenTab() {
 
       toast({
         title: "Started food chat",
-        description: "AI is asking for more details to be more precise.",
+        description: conversation.status === 'ready_to_analyze' ? "Analyzing your food details..." : "AI is asking for more details to be more precise.",
       });
+
+      // If the conversation already has enough info, trigger analysis immediately
+      if (conversation.status === 'ready_to_analyze') {
+        setTimeout(() => {
+          analyzeConversation(conversation);
+        }, 800);
+      }
 
     } catch (error: any) {
       console.error('Failed to start conversation:', error);
