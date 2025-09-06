@@ -23,6 +23,7 @@ export interface ConversationState {
     preparationMethod?: string;
     brand?: string;
     additionalDetails?: string;
+    estimatedNutrition?: any;
   };
 }
 
