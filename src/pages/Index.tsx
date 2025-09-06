@@ -45,16 +45,16 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Top header with hamburger */}
       <div className="px-4 pt-4 pb-0 flex items-center">
-        <Dialog open={false} onOpenChange={() => {}}>
+        <Dialog open={showMenu} onOpenChange={setShowMenu}>
           <DialogContent className="max-w-xs">
             <DialogHeader>
               <DialogTitle>Menu</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <Button variant="ghost" className="w-full text-left" onClick={() => setActiveTab('profile')}>
+              <Button variant="ghost" className="w-full text-left" onClick={() => { setActiveTab('profile'); setShowMenu(false); }}>
                 Profile
               </Button>
-              <Button variant="ghost" className="w-full text-left" onClick={() => { setActiveTab('profile'); }}>
+              <Button variant="ghost" className="w-full text-left" onClick={() => { setActiveTab('profile'); setShowMenu(false); }}>
                 Personal Info
               </Button>
               <Button variant="ghost" className="w-full text-left" onClick={() => { localStorage.removeItem('healthai_user_info'); window.location.reload(); }}>
@@ -68,11 +68,7 @@ const Index = () => {
           <button
             aria-label="Open menu"
             className="p-2 rounded-md hover:bg-muted"
-            onClick={() => {
-              // open dialog by toggling a temp state
-              const evt = new CustomEvent('open-main-menu');
-              window.dispatchEvent(evt);
-            }}
+            onClick={() => setShowMenu(true)}
           >
             <Menu />
           </button>
