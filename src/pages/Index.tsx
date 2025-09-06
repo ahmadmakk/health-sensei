@@ -7,6 +7,7 @@ import { KitchenTab } from "@/components/tabs/KitchenTab";
 import { GymTab } from "@/components/tabs/GymTab";
 import { HealthTab } from "@/components/tabs/HealthTab";
 import { MindTab } from "@/components/tabs/MindTab";
+import { ProfileTab } from "@/components/tabs/ProfileTab";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
