@@ -8,6 +8,9 @@ import { GymTab } from "@/components/tabs/GymTab";
 import { HealthTab } from "@/components/tabs/HealthTab";
 import { MindTab } from "@/components/tabs/MindTab";
 import { ProfileTab } from "@/components/tabs/ProfileTab";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
