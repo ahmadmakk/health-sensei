@@ -229,6 +229,57 @@ export class ConversationalFoodService {
       console.warn('Local input parse failed:', e);
     }
 
+    // Check for common branded items that can be resolved to a standard serving
+    const brandedLookup: { pattern: RegExp; estimate: { name: string; calories: number; protein: number; carbs: number; fat: number; servingSize: string } }[] = [
+      {
+        pattern: /\bbig\s*mac\b/i,
+        estimate: { name: 'Big Mac', calories: 563, protein: 25, carbs: 46, fat: 33, servingSize: '1 burger' }
+      },
+      // Add more branded items here as needed
+    ];
+
+    const brandMatch = brandedLookup.find(b => b.pattern.test(input));
+    if (brandMatch) {
+      // If we have the model available, ask it to return a precise JSON for this branded item,
+      // otherwise use the local estimate.
+      if (this.model && API_KEY) {
+        try {
+          const prompt = `Provide a nutritional estimate for "${brandMatch.estimate.name}" in the exact JSON format:
+{
+  "name": "Complete food name with details",
+  "calories": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number,
+  "servingSize": "detailed serving description",
+  "confidence": number (0-100)
+}`;
+
+          const result = await this.model.generateContent(prompt);
+          const text = result.response.text();
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const analysis = JSON.parse(jsonMatch[0]);
+            return {
+              message: `I found a match and estimated ${analysis.calories} cal (${analysis.protein}P/${analysis.carbs}C/${analysis.fat}F) for ${analysis.name}. Using this estimate.`,
+              extractedInfo: { foodName: analysis.name, portion: analysis.servingSize, additionalDetails: `confidence:${analysis.confidence}` },
+              hasEnoughInfo: true,
+            };
+          }
+        } catch (e) {
+          console.warn('Branded model lookup failed, falling back to local estimate', e);
+        }
+      }
+
+      // Local fallback
+      const est = brandMatch.estimate;
+      return {
+        message: `I found a ${est.name} and estimate ${est.calories} cal (${est.protein}P/${est.carbs}C/${est.fat}F). Using this estimate.`,
+        extractedInfo: { foodName: est.name, portion: est.servingSize, additionalDetails: 'branded_local_estimate' },
+        hasEnoughInfo: true,
+      };
+    }
+
     if (!this.model || !API_KEY) {
       return {
         message: "I'd like to help you log that food! Can you tell me more about the portion size or weight?",
