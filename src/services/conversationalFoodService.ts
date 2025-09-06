@@ -304,7 +304,10 @@ export class ConversationalFoodService {
         Determine:
         1. What food item is being described
         2. What information is missing for accurate nutrition calculation
-        3. What specific questions to ask to get better precision
+        3. Whether you (the model) have enough information to estimate nutrition now.
+
+        If you have enough info, return hasEnoughInfo: true and include an "estimatedNutrition" object with keys: name, calories, protein, carbs, fat, servingSize, confidence.
+        If you need more info, return hasEnoughInfo: false, list missingInfo, and provide a single concise nextQuestion to ask the user.
 
         Missing information could include:
         - Portion size (small, medium, large, cups, pieces)
@@ -313,21 +316,22 @@ export class ConversationalFoodService {
         - Brand (if applicable)
         - Additional ingredients or modifications
 
-        Respond in this JSON format:
+        Respond in this JSON format (ONLY JSON):
         {
           "foodName": "identified food name",
           "missingInfo": ["list", "of", "missing", "info"],
           "nextQuestion": "specific question to ask the user for clarity",
-          "hasEnoughInfo": false (true only if you have food name + portion/weight)
+          "hasEnoughInfo": boolean,
+          "estimatedNutrition": { "name": string, "calories": number, "protein": number, "carbs": number, "fat": number, "servingSize": string, "confidence": number }
         }
 
         Examples:
         - "hamburger" → ask about size, toppings, brand
-        - "100g chicken breast" → might have enough info
+        - "100g chicken breast" → might have enough info and return estimatedNutrition
         - "apple" → ask about size (small/medium/large)
         - "pasta" → ask about portion, sauce, preparation
 
-        Be conversational and friendly in your question.
+        Be concise and either ask one question or return the estimatedNutrition.
       `;
 
       const result = await this.model.generateContent(prompt);
