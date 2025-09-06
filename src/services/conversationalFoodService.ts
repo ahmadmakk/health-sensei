@@ -200,6 +200,35 @@ export class ConversationalFoodService {
     extractedInfo: Partial<ConversationState['extractedInfo']>;
     hasEnoughInfo: boolean;
   }> {
+    // First, try a local parse to detect weights/portions in the initial input so we
+    // don't ask for clarification when the user already provided usable info.
+    try {
+      const weightMatch = input.match(/(\d+(?:\.\d+)?)\s*(g|gram|grams|kg|kilogram|oz|ounce|lb|lbs)/i);
+      const portionMatch = input.match(/(\d+(?:\.\d+)?)\s*(cup|cups|slice|slices|piece|pieces|serving|servings|tbsp|tsp)/i);
+      const sizeMatch = input.match(/\b(small|medium|large|extra large|xl|sm|lg)\b/i);
+
+      let foodName = input.replace(/(\d+(?:\.\d+)?\s*(g|gram|grams|kg|kilogram|oz|ounce|lb|lbs|cup|cups|slice|slices|piece|pieces|serving|servings|tbsp|tsp))/gi, '').trim();
+      if (!foodName) foodName = input.trim();
+
+      const extracted: Partial<ConversationState['extractedInfo']> = {
+        foodName: foodName || undefined,
+        portion: portionMatch ? portionMatch[0] : (sizeMatch ? sizeMatch[0] : undefined),
+        weight: weightMatch ? weightMatch[0] : undefined,
+      };
+
+      const hasEnoughLocal = !!(extracted.foodName && (extracted.weight || extracted.portion));
+      if (hasEnoughLocal) {
+        return {
+          message: "Thanks — I have enough info. Let me calculate the nutrition for you.",
+          extractedInfo: extracted,
+          hasEnoughInfo: true,
+        };
+      }
+    } catch (e) {
+      // ignore parsing errors and fall through to model-based analysis
+      console.warn('Local input parse failed:', e);
+    }
+
     if (!this.model || !API_KEY) {
       return {
         message: "I'd like to help you log that food! Can you tell me more about the portion size or weight?",
@@ -211,7 +240,7 @@ export class ConversationalFoodService {
     try {
       const prompt = `
         Analyze this food input: "${input}"
-        
+
         Determine:
         1. What food item is being described
         2. What information is missing for accurate nutrition calculation
