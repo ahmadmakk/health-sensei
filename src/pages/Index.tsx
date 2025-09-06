@@ -26,6 +26,8 @@ const Index = () => {
         return <HealthTab />;
       case "mind":
         return <MindTab />;
+      case "profile":
+        return <ProfileTab />;
       default:
         return <HomeTab />;
     }
