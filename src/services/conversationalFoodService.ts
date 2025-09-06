@@ -105,6 +105,30 @@ export class ConversationalFoodService {
     conversation: ConversationState,
     goal: 'lose_weight' | 'maintain' | 'gain_weight'
   ): Promise<FoodItem> {
+    // If we already have an estimatedNutrition from the model in extractedInfo, use it directly
+    if (conversation.extractedInfo?.estimatedNutrition) {
+      try {
+        const analysis = conversation.extractedInfo.estimatedNutrition;
+        const adjustedCalories = this.applyGoalAdjustment(analysis.calories, goal);
+        const foodItem: FoodItem = {
+          id: Date.now().toString(),
+          name: analysis.name,
+          calories: adjustedCalories,
+          macros: {
+            protein: analysis.protein || 0,
+            carbs: analysis.carbs || 0,
+            fat: analysis.fat || 0,
+          },
+          servingSize: analysis.servingSize || '1 serving',
+          isCustom: true,
+          createdAt: new Date().toISOString(),
+        };
+        return foodItem;
+      } catch (e) {
+        console.warn('Failed to use estimatedNutrition directly, falling back to full analysis', e);
+      }
+    }
+
     if (!this.model || !API_KEY) {
       console.warn('Google API not available, using fallback');
       return this.getFallbackFromConversation(conversation, goal);
