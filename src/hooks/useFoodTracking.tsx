@@ -107,7 +107,27 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [groceryLists, setGroceryLists] = useState<GroceryList[]>([]);
 
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+
+  // Remove nutrition entries older than 3 days to avoid piling up data
+  const pruneOldNutritionData = (data: Record<string, DailyNutrition>) => {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 3);
+      const cutoffStr = cutoff.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      return Object.keys(data).reduce((acc: Record<string, DailyNutrition>, dateKey) => {
+        // keep entries that are on or after cutoff
+        if (dateKey >= cutoffStr) {
+          acc[dateKey] = data[dateKey];
+        }
+        return acc;
+      }, {} as Record<string, DailyNutrition>);
+    } catch (e) {
+      console.error('Failed to prune nutrition data:', e);
+      return data;
+    }
+  }; // YYYY-MM-DD format
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -120,7 +140,9 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
 
     if (storedData) {
       try {
-        setNutritionData(JSON.parse(storedData));
+        const parsed = JSON.parse(storedData);
+        const pruned = pruneOldNutritionData(parsed);
+        setNutritionData(pruned);
       } catch (error) {
         console.error('Failed to parse nutrition data:', error);
       }
@@ -186,8 +208,9 @@ export function FoodTrackingProvider({ children }: { children: ReactNode }) {
   };
 
   const saveNutritionData = (data: Record<string, DailyNutrition>) => {
-    setNutritionData(data);
-    localStorage.setItem(NUTRITION_DATA_KEY, JSON.stringify(data));
+    const pruned = pruneOldNutritionData(data);
+    setNutritionData(pruned);
+    localStorage.setItem(NUTRITION_DATA_KEY, JSON.stringify(pruned));
   };
 
   const addMeal = (meal: Omit<MealEntry, 'id' | 'timestamp'>) => {
