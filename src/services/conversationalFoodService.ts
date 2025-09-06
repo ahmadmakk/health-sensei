@@ -271,7 +271,7 @@ export class ConversationalFoodService {
             const analysis = JSON.parse(jsonMatch[0]);
             return {
               message: `I found a match and estimated ${analysis.calories} cal (${analysis.protein}P/${analysis.carbs}C/${analysis.fat}F) for ${analysis.name}. Using this estimate.`,
-              extractedInfo: { foodName: analysis.name, portion: analysis.servingSize, additionalDetails: `confidence:${analysis.confidence}` },
+              extractedInfo: { foodName: analysis.name, portion: analysis.servingSize, estimatedNutrition: analysis, additionalDetails: `confidence:${analysis.confidence}` },
               hasEnoughInfo: true,
             };
           }
@@ -284,7 +284,7 @@ export class ConversationalFoodService {
       const est = brandMatch.estimate;
       return {
         message: `I found a ${est.name} and estimate ${est.calories} cal (${est.protein}P/${est.carbs}C/${est.fat}F). Using this estimate.`,
-        extractedInfo: { foodName: est.name, portion: est.servingSize, additionalDetails: 'branded_local_estimate' },
+        extractedInfo: { foodName: est.name, portion: est.servingSize, estimatedNutrition: est, additionalDetails: 'branded_local_estimate' },
         hasEnoughInfo: true,
       };
     }
