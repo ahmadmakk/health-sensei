@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BottomNavigation } from "@/components/ui/bottom-navigation";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { useUserInfo } from "@/hooks/useUserInfo";
