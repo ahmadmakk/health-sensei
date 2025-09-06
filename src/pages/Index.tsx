@@ -42,15 +42,51 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Top header with hamburger */}
+      <div className="px-4 pt-4 pb-0 flex items-center">
+        <Dialog open={false} onOpenChange={() => {}}>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle>Menu</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <Button variant="ghost" className="w-full text-left" onClick={() => setActiveTab('profile')}>
+                Profile
+              </Button>
+              <Button variant="ghost" className="w-full text-left" onClick={() => { setActiveTab('profile'); }}>
+                Personal Info
+              </Button>
+              <Button variant="ghost" className="w-full text-left" onClick={() => { localStorage.removeItem('healthai_user_info'); window.location.reload(); }}>
+                Reset Onboarding
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <div className="pr-3">
+          <button
+            aria-label="Open menu"
+            className="p-2 rounded-md hover:bg-muted"
+            onClick={() => {
+              // open dialog by toggling a temp state
+              const evt = new CustomEvent('open-main-menu');
+              window.dispatchEvent(evt);
+            }}
+          >
+            <Menu />
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="px-4 pt-6 pb-20">
+      <div className="px-4 pt-2 pb-20">
         {renderActiveTab()}
       </div>
-      
+
       {/* Bottom Navigation */}
-      <BottomNavigation 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab} 
+      <BottomNavigation
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
     </div>
   );
