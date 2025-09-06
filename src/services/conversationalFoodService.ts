@@ -348,9 +348,15 @@ export class ConversationalFoodService {
 
       const analysis = JSON.parse(jsonMatch[0]);
 
+      // If model provided estimatedNutrition, pass it through in extractedInfo so final analysis can use it directly
+      const extracted: Partial<ConversationState['extractedInfo']> = { foodName: analysis.foodName || input };
+      if (analysis.estimatedNutrition) {
+        extracted.estimatedNutrition = analysis.estimatedNutrition;
+      }
+
       return {
-        message: analysis.nextQuestion || "Can you provide more details about the portion size?",
-        extractedInfo: { foodName: analysis.foodName || input },
+        message: analysis.hasEnoughInfo ? (analysis.estimatedNutrition ? `Got it — using estimate of ${analysis.estimatedNutrition.calories} cal for ${analysis.estimatedNutrition.name}` : (analysis.nextQuestion || "Thanks — I have enough info.")) : (analysis.nextQuestion || "Can you provide more details about the portion size?"),
+        extractedInfo: extracted,
         hasEnoughInfo: analysis.hasEnoughInfo || false
       };
 
