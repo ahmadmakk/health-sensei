@@ -235,6 +235,14 @@ export class ConversationalFoodService {
         pattern: /\bbig\s*mac\b/i,
         estimate: { name: 'Big Mac', calories: 563, protein: 25, carbs: 46, fat: 33, servingSize: '1 burger' }
       },
+      {
+        pattern: /\bwhopper\b/i,
+        estimate: { name: 'Whopper (Burger King)', calories: 657, protein: 28, carbs: 49, fat: 40, servingSize: '1 burger' }
+      },
+      {
+        pattern: /kfc\s*(?:9|nine)\s*(?:piece|pc|pcs)\s*bucket|9-?piece\s*kfc\s*bucket/i,
+        estimate: { name: 'KFC 9-piece Bucket', calories: 2700, protein: 150, carbs: 120, fat: 180, servingSize: '9 pieces (bucket)' }
+      },
       // Add more branded items here as needed
     ];
 
