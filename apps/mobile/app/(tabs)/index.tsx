@@ -92,6 +92,11 @@ export default function KitchenScreen() {
       <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 12 }}>Kitchen</Text>
       <Text style={{ marginBottom: 8 }}>Hello {userInfo.name ?? 'Guest'}</Text>
 
+      <View style={styles.actionsRow}>
+        <Button title="Pick Photo" onPress={handlePhotoPick} />
+        <Button title="Take Photo" onPress={handleCameraCapture} />
+      </View>
+
       <View style={styles.chatBox}>
         <FlatList
           data={messages}
