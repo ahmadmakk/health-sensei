@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Button, FlatList, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Button, FlatList, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useMealsStore } from '../../src/hooks/useMeals';
 import { useUserInfo } from '../../src/hooks/useUserInfo';
 import { startFoodConversation, continueConversation, generateFinalAnalysis } from '../../src/services/conversationalFoodService';
+import { analyzeImage } from '../../src/services/foodAnalysisService';
 
 export default function KitchenScreen() {
   const { loadMeals, addMeal } = useMealsStore();
