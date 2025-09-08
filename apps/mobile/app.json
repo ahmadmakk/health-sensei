@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Health Sensei Mobile",
+    "slug": "health-sensei-mobile",
+    "sdkVersion": "51.0.0",
+    "platforms": ["ios","android"],
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "updates": { "enabled": true, "fallbackToCacheTimeout": 0 },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "android": { "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#FFFFFF" } }
+  }
+}
