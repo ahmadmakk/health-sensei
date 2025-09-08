@@ -1,32 +1,50 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { defaultUserInfo } from '../../../src/types/userInfo';
+import { defaultUserInfo, UserInfo } from '../../../src/types/userInfo';
 
 const USER_INFO_KEY = 'healthai_user_info';
 
-export const UserInfoContext = createContext<any>(null);
+interface UserInfoContextType {
+  userInfo: UserInfo;
+  updateUserInfo: (updates: Partial<UserInfo>) => Promise<void>;
+  resetUserInfo: () => Promise<void>;
+}
 
-export function UserInfoProvider({ children }: any) {
-  const [userInfo, setUserInfo] = useState(defaultUserInfo);
+export const UserInfoContext = createContext<UserInfoContextType | undefined>(undefined);
+
+export function UserInfoProvider({ children }: { children: ReactNode }) {
+  const [userInfo, setUserInfo] = useState<UserInfo>(defaultUserInfo);
 
   useEffect(() => {
     (async () => {
-      const stored = await AsyncStorage.getItem(USER_INFO_KEY);
-      if (stored) {
-        try { setUserInfo({ ...defaultUserInfo, ...JSON.parse(stored) }); } catch(e) { console.warn(e); }
+      try {
+        const stored = await AsyncStorage.getItem(USER_INFO_KEY);
+        if (stored) {
+          setUserInfo({ ...defaultUserInfo, ...JSON.parse(stored) });
+        }
+      } catch (e) {
+        console.warn('Failed to load user info', e);
       }
     })();
   }, []);
 
-  const updateUserInfo = async (updates: any) => {
+  const updateUserInfo = async (updates: Partial<UserInfo>) => {
     const updated = { ...userInfo, ...updates, lastUpdated: new Date().toISOString() };
     setUserInfo(updated);
-    await AsyncStorage.setItem(USER_INFO_KEY, JSON.stringify(updated));
+    try {
+      await AsyncStorage.setItem(USER_INFO_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to save user info', e);
+    }
   };
 
   const resetUserInfo = async () => {
     setUserInfo(defaultUserInfo);
-    await AsyncStorage.removeItem(USER_INFO_KEY);
+    try {
+      await AsyncStorage.removeItem(USER_INFO_KEY);
+    } catch (e) {
+      console.warn('Failed to remove user info', e);
+    }
   };
 
   return (
@@ -36,4 +54,8 @@ export function UserInfoProvider({ children }: any) {
   );
 }
 
-export const useUserInfo = () => useContext(UserInfoContext);
+export const useUserInfo = () => {
+  const ctx = useContext(UserInfoContext);
+  if (!ctx) throw new Error('useUserInfo must be used within UserInfoProvider');
+  return ctx;
+};
