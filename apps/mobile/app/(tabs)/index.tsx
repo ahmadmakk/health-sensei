@@ -34,6 +34,33 @@ export default function KitchenScreen() {
     setInput('');
   };
 
+  const handlePhotoPick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Permission to access photos is required to analyze images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.6 });
+      if (result.cancelled) return;
+      setLoading(true);
+      const base64 = result.base64 ? `data:image/jpeg;base64,${result.base64}` : null;
+      if (!base64) throw new Error('No image data');
+
+      const analyzed = await analyzeImage(base64, userInfo?.goals?.includes('lose_weight') ? 'lose_weight' : 'maintain');
+      // add as meal
+      await addMeal({ date: new Date().toISOString().split('T')[0], items: [analyzed], notes: undefined });
+      setMessages(prev => [...prev, { id: String(Date.now()), role: 'assistant', content: `Added ${analyzed.name} (${analyzed.calories} cal)` }]);
+
+    } catch (e) {
+      console.warn('Photo analysis failed', e);
+      Alert.alert('Analysis failed', 'Could not analyze the photo. Try a different image or manual entry.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const sendFollowUp = async (text: string) => {
     if (!conversation) return;
     setLoading(true);
