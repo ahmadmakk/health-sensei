@@ -1,16 +1,18 @@
 import { Tabs } from 'expo-router';
-import { View, Pressable } from 'react-native';
-import { Menu } from 'lucide-react-native';
+import React from 'react';
+import { UserInfoProvider } from '../src/hooks/useUserInfo';
 
 export default function Layout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: true,
-      }}
-    >
-      <Tabs.Screen name="(tabs)/index" options={{ title: 'Kitchen' }} />
-      <Tabs.Screen name="(tabs)/profile" options={{ title: 'Profile' }} />
-    </Tabs>
+    <UserInfoProvider>
+      <Tabs
+        screenOptions={{
+          headerShown: true,
+        }}
+      >
+        <Tabs.Screen name="(tabs)/index" options={{ title: 'Kitchen' }} />
+        <Tabs.Screen name="(tabs)/profile" options={{ title: 'Profile' }} />
+      </Tabs>
+    </UserInfoProvider>
   );
 }
