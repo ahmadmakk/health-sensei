@@ -61,6 +61,32 @@ export default function KitchenScreen() {
     }
   };
 
+  const handleCameraCapture = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Camera permission is required to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.6 });
+      if (result.cancelled) return;
+      setLoading(true);
+      const base64 = result.base64 ? `data:image/jpeg;base64,${result.base64}` : null;
+      if (!base64) throw new Error('No image data');
+
+      const analyzed = await analyzeImage(base64, userInfo?.goals?.includes('lose_weight') ? 'lose_weight' : 'maintain');
+      await addMeal({ date: new Date().toISOString().split('T')[0], items: [analyzed], notes: undefined });
+      setMessages(prev => [...prev, { id: String(Date.now()), role: 'assistant', content: `Added ${analyzed.name} (${analyzed.calories} cal)` }]);
+
+    } catch (e) {
+      console.warn('Camera analysis failed', e);
+      Alert.alert('Analysis failed', 'Could not analyze the photo. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const sendFollowUp = async (text: string) => {
     if (!conversation) return;
     setLoading(true);
@@ -122,6 +148,7 @@ export default function KitchenScreen() {
 }
 
 const styles = StyleSheet.create({
+  actionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   chatBox: { flex: 1, marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 8 },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' as const },
   input: { flex: 1, borderWidth: 1, borderColor: '#e5e7eb', padding: 10, borderRadius: 8, marginRight: 8 }
