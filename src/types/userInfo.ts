@@ -29,7 +29,7 @@ export interface UserInfo {
 
 export const defaultUserInfo: UserInfo = {
   preferredUnits: 'metric',
-  onboardingCompleted: false,
+  onboardingCompleted: true,
   goals: [],
   healthConditions: [],
   medications: [],

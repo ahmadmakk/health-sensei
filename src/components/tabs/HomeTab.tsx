@@ -1,9 +1,14 @@
 import { HealthCard } from "@/components/ui/health-card";
+import { CircularCalories } from "@/components/ui/circular-calories";
 import { Button } from "@/components/ui/button";
+import { useFoodTracking } from "@/hooks/useFoodTracking";
 import { Utensils, Dumbbell, Heart, Brain, Zap, TrendingUp } from "lucide-react";
 import healthHero from "@/assets/health-hero.png";
 
 export function HomeTab() {
+  const { todaysNutrition, nutritionGoals, getMacroPercentagesForToday } = useFoodTracking();
+  const macroPercentages = getMacroPercentagesForToday();
+
   return (
     <div className="space-y-6 pb-20">
       {/* Header */}
@@ -18,24 +23,22 @@ export function HomeTab() {
       {/* Daily Summary */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Today's Overview</h2>
-        
+
         <div className="grid grid-cols-2 gap-4">
-          <HealthCard
-            title="Calories"
-            value="1,847"
-            subtitle="573 remaining"
-            icon={<Zap className="w-4 h-4 text-warning" />}
-            trend="up"
-          />
-          
-          <HealthCard
-            title="Macros"
-            value="72%"
-            subtitle="On track"
-            icon={<TrendingUp className="w-4 h-4 text-success" />}
-            trend="up"
-          />
-          
+          {/* Circular Calories with Macro Breakdown */}
+          <div className="col-span-2 bg-gradient-card border border-border rounded-lg p-4 shadow-soft">
+            <CircularCalories
+              currentCalories={todaysNutrition.totalCalories}
+              targetCalories={nutritionGoals.targetCalories}
+              macros={{
+                carbs: macroPercentages.carbs,
+                protein: macroPercentages.protein,
+                fat: macroPercentages.fat
+              }}
+              className="w-full"
+            />
+          </div>
+
           <HealthCard
             title="Workout"
             value="45min"
@@ -43,7 +46,7 @@ export function HomeTab() {
             icon={<Dumbbell className="w-4 h-4 text-primary" />}
             variant="success"
           />
-          
+
           <HealthCard
             title="Health Score"
             value="87"
@@ -83,7 +86,10 @@ export function HomeTab() {
         <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
         
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" className="h-20 flex flex-col gap-2">
+          <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => {
+            const evt = new CustomEvent('navigate', { detail: 'kitchen' });
+            window.dispatchEvent(evt);
+          }}>
             <Utensils className="w-5 h-5" />
             <span className="text-sm">Log Meal</span>
           </Button>

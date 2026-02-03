@@ -2,9 +2,472 @@ import { HealthCard } from "@/components/ui/health-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Scan, Camera, Pill, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
+import { useFoodTracking } from "@/hooks/useFoodTracking";
+import { useUserInfo } from "@/hooks/useUserInfo";
+import { Plus, Search, Scan, Camera, Pill, Target, Loader2, Trash2, MessageCircle, Send } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { conversationalFoodService, ConversationState, ConversationMessage } from "@/services/conversationalFoodService";
 
 export function KitchenTab() {
+  const { todaysNutrition, nutritionGoals, addMeal, removeMeal, analyzeFood, searchFood } = useFoodTracking();
+  const { userInfo } = useUserInfo();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState('');
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline' | 'unknown'>('unknown');
+
+  // Conversational AI state
+  const [currentConversation, setCurrentConversation] = useState<ConversationState | null>(null);
+  const [showConversation, setShowConversation] = useState(false);
+  const [conversationInput, setConversationInput] = useState('');
+  const [isConversationLoading, setIsConversationLoading] = useState(false);
+
+  const [manualFood, setManualFood] = useState({
+    name: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    servingSize: '',
+    quantity: '1'
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const conversationEndRef = useRef<HTMLDivElement>(null);
+
+  // Check API connectivity when component mounts
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      setApiStatus('checking');
+      try {
+        const { foodAnalysisService } = await import('@/services/foodAnalysisService');
+        const connectivity = await foodAnalysisService.testConnectivity();
+
+        if (connectivity.success) {
+          setApiStatus('online');
+          console.log('✅ AI food analysis is available');
+        } else {
+          setApiStatus('offline');
+          console.log('❌ AI food analysis is unavailable:', connectivity.error);
+
+          // Show a non-intrusive notification about offline mode
+          setTimeout(() => {
+            toast({
+              title: "AI temporarily unavailable",
+              description: "Food analysis will use local estimates. Check your internet connection.",
+              variant: "default",
+            });
+          }, 1000);
+        }
+      } catch (error) {
+        setApiStatus('offline');
+        console.log('❌ AI service check failed:', error);
+      }
+    };
+
+    checkApiStatus();
+  }, []);
+
+  const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisProgress('Reading image...');
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const imageData = reader.result as string;
+
+          setAnalysisProgress('Analyzing food with AI...');
+
+          // Show analysis start notification
+          toast({
+            title: "Analyzing your food...",
+            description: "AI is identifying the food and calculating nutrition.",
+          });
+
+          // Determine user's goal from their info
+          const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                      userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+          const analyzedFood = await analyzeFood(imageData, goal);
+
+          setAnalysisProgress('Adding to diary...');
+
+          // Add the analyzed food as a meal
+          addMeal({
+            foodItem: analyzedFood,
+            quantity: 1,
+            mealType: getCurrentMealType(),
+            source: 'photo',
+            imageUrl: imageData,
+          });
+
+          toast({
+            title: "Food analyzed successfully!",
+            description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+          });
+
+        } catch (analysisError: any) {
+          console.error('Food analysis error:', analysisError);
+
+          // Provide more specific error messages for photo analysis
+          let errorMessage = "AI couldn't analyze this image.";
+          if (analysisError.message?.includes('fetch')) {
+            errorMessage = "Network error during analysis. Check your connection and try again.";
+          } else if (analysisError.message?.includes('timeout')) {
+            errorMessage = "Photo analysis timed out. Try a smaller image or manual entry.";
+          } else if (analysisError.message?.includes('parse')) {
+            errorMessage = "AI couldn't understand the image. Try a clearer photo or manual entry.";
+          }
+
+          toast({
+            title: "Photo analysis failed",
+            description: `${errorMessage} You can add the food manually instead.`,
+            variant: "destructive",
+          });
+        }
+      };
+
+      reader.onerror = () => {
+        toast({
+          title: "File reading failed",
+          description: "Couldn't read the image file. Please try again.",
+          variant: "destructive",
+        });
+      };
+
+      reader.readAsDataURL(file);
+
+    } catch (error) {
+      console.error('Photo capture error:', error);
+      toast({
+        title: "Photo capture failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+      setAnalysisProgress('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleManualEntry = () => {
+    if (!manualFood.name || !manualFood.calories) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in at least the food name and calories.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const foodItem = {
+      id: Date.now().toString(),
+      name: manualFood.name,
+      calories: parseInt(manualFood.calories),
+      macros: {
+        protein: parseFloat(manualFood.protein) || 0,
+        carbs: parseFloat(manualFood.carbs) || 0,
+        fat: parseFloat(manualFood.fat) || 0,
+      },
+      servingSize: manualFood.servingSize || '1 serving',
+      isCustom: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    addMeal({
+      foodItem,
+      quantity: parseFloat(manualFood.quantity) || 1,
+      mealType: getCurrentMealType(),
+      source: 'manual',
+    });
+
+    // Reset form
+    setManualFood({
+      name: '',
+      calories: '',
+      protein: '',
+      carbs: '',
+      fat: '',
+      servingSize: '',
+      quantity: '1'
+    });
+    setShowManualEntry(false);
+
+    toast({
+      title: "Food added!",
+      description: `Added ${foodItem.name} to your diary.`,
+    });
+  };
+
+  const handleAISearch = async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsSearching(true);
+    setAnalysisProgress('Connecting to AI...');
+
+    try {
+      // Show search start notification
+      toast({
+        title: "Searching for food...",
+        description: `AI is analyzing "${query}" and calculating nutrition.`,
+      });
+
+      setAnalysisProgress('Analyzing with AI...');
+
+      // Determine user's goal from their info
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const analyzedFood = await searchFood(query, goal);
+
+      setAnalysisProgress('Adding to diary...');
+
+      // Add the analyzed food as a meal
+      addMeal({
+        foodItem: analyzedFood,
+        quantity: 1,
+        mealType: getCurrentMealType(),
+        source: 'search',
+      });
+
+      // Check if this was a fallback result
+      const isFallback = analyzedFood.name.includes('Network Error') ||
+                        analyzedFood.name.includes('Estimated');
+
+      if (isFallback) {
+        toast({
+          title: "Food added (estimated)",
+          description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal). AI analysis failed, but we provided a reasonable estimate.`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Food found!",
+          description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+        });
+      }
+
+      // Clear search
+      setSearchQuery('');
+
+    } catch (error: any) {
+      console.error('Food search error:', error);
+
+      // Provide more specific error messages
+      let errorMessage = "AI couldn't analyze this food.";
+      if (error.message?.includes('fetch')) {
+        errorMessage = "Network connection issue. Check your internet and try again.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "AI analysis is taking too long. Try again or use manual entry.";
+      }
+
+      toast({
+        title: "Search failed",
+        description: `${errorMessage} Try manual entry or taking a photo instead.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+      setAnalysisProgress('');
+    }
+  };
+
+  const handleSearchKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchQuery.trim()) {
+      handleAISearch(searchQuery);
+    }
+  };
+
+  const startConversationalSearch = async (initialInput: string) => {
+    setIsConversationLoading(true);
+    setShowConversation(true);
+    setSearchQuery('');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const conversation = await conversationalFoodService.startFoodConversation(initialInput, goal);
+      setCurrentConversation(conversation);
+
+      toast({
+        title: "Started food chat",
+        description: conversation.status === 'ready_to_analyze' ? "Analyzing your food details..." : "AI is asking for more details to be more precise.",
+      });
+
+      // If the conversation already has enough info, trigger analysis immediately
+      if (conversation.status === 'ready_to_analyze') {
+        setTimeout(() => {
+          analyzeConversation(conversation);
+        }, 800);
+      }
+
+    } catch (error: any) {
+      console.error('Failed to start conversation:', error);
+      toast({
+        title: "Conversation failed",
+        description: "Couldn't start AI chat. Try manual entry instead.",
+        variant: "destructive",
+      });
+      setShowConversation(false);
+    } finally {
+      setIsConversationLoading(false);
+    }
+  };
+
+  const continueConversation = async (userInput: string) => {
+    if (!currentConversation || !userInput.trim()) return;
+
+    setIsConversationLoading(true);
+    setConversationInput('');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const updatedConversation = await conversationalFoodService.continueConversation(
+        currentConversation,
+        userInput,
+        goal
+      );
+
+      setCurrentConversation(updatedConversation);
+
+      // If we have enough info, offer to analyze
+      if (updatedConversation.status === 'ready_to_analyze') {
+        setTimeout(() => {
+          analyzeConversation(updatedConversation);
+        }, 1000);
+      }
+
+    } catch (error: any) {
+      console.error('Failed to continue conversation:', error);
+      toast({
+        title: "Conversation error",
+        description: "Something went wrong. Let me try to analyze what we have.",
+        variant: "destructive",
+      });
+
+      if (currentConversation) {
+        analyzeConversation(currentConversation);
+      }
+    } finally {
+      setIsConversationLoading(false);
+    }
+  };
+
+  const analyzeConversation = async (conversation: ConversationState) => {
+    setIsConversationLoading(true);
+    setAnalysisProgress('Analyzing conversation...');
+
+    try {
+      const goal = userInfo.goals?.includes('lose_weight') ? 'lose_weight' :
+                  userInfo.goals?.includes('gain_weight') ? 'gain_weight' : 'maintain';
+
+      const analyzedFood = await conversationalFoodService.generateFinalAnalysis(conversation, goal);
+
+      // Add the analyzed food as a meal
+      addMeal({
+        foodItem: analyzedFood,
+        quantity: 1,
+        mealType: getCurrentMealType(),
+        source: 'conversation',
+      });
+
+      // Update conversation status
+      setCurrentConversation(prev => prev ? { ...prev, status: 'completed' } : null);
+
+      toast({
+        title: "Food logged successfully!",
+        description: `Added ${analyzedFood.name} (${analyzedFood.calories} cal) to your diary.`,
+      });
+
+      // Close conversation after a short delay
+      setTimeout(() => {
+        setShowConversation(false);
+        setCurrentConversation(null);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Final analysis failed:', error);
+      toast({
+        title: "Analysis failed",
+        description: "Couldn't complete the analysis. Try manual entry.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConversationLoading(false);
+      setAnalysisProgress('');
+    }
+  };
+
+  const handleConversationKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && conversationInput.trim() && !isConversationLoading) {
+      continueConversation(conversationInput);
+    }
+  };
+
+  const handleQuickSearchKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && searchQuery.trim()) {
+      startConversationalSearch(searchQuery);
+    }
+  };
+
+  // Auto-scroll to bottom of conversation
+  useEffect(() => {
+    if (conversationEndRef.current) {
+      conversationEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentConversation?.messages]);
+
+  const getCurrentMealType = (): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
+    const hour = new Date().getHours();
+    if (hour < 10) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 19) return 'dinner';
+    return 'snack';
+  };
+
+  const macroProgress = {
+    protein: (todaysNutrition.totalMacros.protein / nutritionGoals.targetMacros.protein) * 100,
+    carbs: (todaysNutrition.totalMacros.carbs / nutritionGoals.targetMacros.carbs) * 100,
+    fat: (todaysNutrition.totalMacros.fat / nutritionGoals.targetMacros.fat) * 100,
+  };
+
   return (
     <div className="space-y-6 pb-20">
       {/* Header */}
@@ -12,9 +475,9 @@ export function KitchenTab() {
         <h1 className="text-2xl font-bold text-foreground">Kitchen</h1>
         
         {/* Daily Macros */}
-        <HealthCard 
-          title="Daily Macros" 
-          value="85%" 
+        <HealthCard
+          title="Daily Macros"
+          value={`${Math.round(((macroProgress.protein + macroProgress.carbs + macroProgress.fat) / 3))}%`}
           subtitle="Target completion"
           variant="primary"
         >
@@ -23,30 +486,30 @@ export function KitchenTab() {
               <h3 className="font-semibold text-primary-foreground">Macro Breakdown</h3>
               <Target className="w-5 h-5 text-primary-foreground" />
             </div>
-            
+
             <div className="space-y-3">
               <div className="space-y-1">
                 <div className="flex justify-between text-sm text-primary-foreground/90">
                   <span>Protein</span>
-                  <span>127g / 150g</span>
+                  <span>{Math.round(todaysNutrition.totalMacros.protein)}g / {nutritionGoals.targetMacros.protein}g</span>
                 </div>
-                <Progress value={85} className="h-2" />
+                <Progress value={Math.min(macroProgress.protein, 100)} className="h-2" />
               </div>
-              
+
               <div className="space-y-1">
                 <div className="flex justify-between text-sm text-primary-foreground/90">
                   <span>Carbs</span>
-                  <span>180g / 200g</span>
+                  <span>{Math.round(todaysNutrition.totalMacros.carbs)}g / {nutritionGoals.targetMacros.carbs}g</span>
                 </div>
-                <Progress value={90} className="h-2" />
+                <Progress value={Math.min(macroProgress.carbs, 100)} className="h-2" />
               </div>
-              
+
               <div className="space-y-1">
                 <div className="flex justify-between text-sm text-primary-foreground/90">
                   <span>Fat</span>
-                  <span>65g / 80g</span>
+                  <span>{Math.round(todaysNutrition.totalMacros.fat)}g / {nutritionGoals.targetMacros.fat}g</span>
                 </div>
-                <Progress value={81} className="h-2" />
+                <Progress value={Math.min(macroProgress.fat, 100)} className="h-2" />
               </div>
             </div>
           </div>
@@ -58,51 +521,311 @@ export function KitchenTab() {
         <h2 className="text-lg font-semibold text-foreground">Log Your Meal</h2>
         
         <div className="relative">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search foods..." 
-            className="pl-10 h-12"
+          <MessageCircle className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={
+              isConversationLoading ? "Starting AI chat..." :
+              apiStatus === 'offline' ? "Type food name for AI chat (offline - using estimates)" :
+              apiStatus === 'checking' ? "Checking AI status..." :
+              "Type food name for AI chat (e.g., 'hamburger', 'chicken')"
+            }
+            className="pl-10 pr-16 h-12"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleQuickSearchKeyPress}
+            disabled={isConversationLoading || isAnalyzing || apiStatus === 'checking' || showConversation}
           />
+          <div className="absolute right-3 top-3 flex items-center gap-2">
+            {isConversationLoading && (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            )}
+            {apiStatus === 'checking' && (
+              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" title="Checking AI status..." />
+            )}
+            {apiStatus === 'online' && (
+              <div className="w-2 h-2 rounded-full bg-green-500" title="AI available" />
+            )}
+            {apiStatus === 'offline' && (
+              <div className="w-2 h-2 rounded-full bg-red-500" title="AI offline - using estimates" />
+            )}
+          </div>
         </div>
+
+        {/* Conversational AI Chat Interface */}
+        {showConversation && currentConversation && (
+          <div className="bg-gradient-card border border-border rounded-lg p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                AI Food Chat
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setShowConversation(false);
+                  setCurrentConversation(null);
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+
+            {/* Conversation Messages */}
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {currentConversation.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg text-sm ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+
+              {isConversationLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-muted-foreground p-3 rounded-lg text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    {analysisProgress || 'AI is thinking...'}
+                  </div>
+                </div>
+              )}
+
+              <div ref={conversationEndRef} />
+            </div>
+
+            {/* Input for continuing conversation */}
+            {currentConversation.status === 'collecting_info' && (
+              <div className="relative">
+                <Input
+                  placeholder="Type your response..."
+                  value={conversationInput}
+                  onChange={(e) => setConversationInput(e.target.value)}
+                  onKeyPress={handleConversationKeyPress}
+                  disabled={isConversationLoading}
+                  className="pr-10"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute right-1 top-1 h-8 w-8 p-0"
+                  onClick={() => continueConversation(conversationInput)}
+                  disabled={!conversationInput.trim() || isConversationLoading}
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+
+            {currentConversation.status === 'ready_to_analyze' && (
+              <div className="text-center text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                Analyzing your food details...
+              </div>
+            )}
+
+            {currentConversation.status === 'completed' && (
+              <div className="text-center text-sm text-green-600">
+                ✓ Food logged successfully!
+              </div>
+            )}
+          </div>
+        )}
+
+        {isSearching && (
+          <div className="text-sm text-muted-foreground text-center py-2">
+            {analysisProgress || 'AI is analyzing your food...'}
+          </div>
+        )}
         
         <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" className="h-16 flex flex-col gap-2">
-            <Search className="w-5 h-5" />
-            <span className="text-xs">Search</span>
-          </Button>
-          
-          <Button variant="outline" className="h-16 flex flex-col gap-2">
+          <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-16 flex flex-col gap-2">
+                <Search className="w-5 h-5" />
+                <span className="text-xs">Manual Entry</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Food Manually</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="foodName">Food Name *</Label>
+                  <Input
+                    id="foodName"
+                    value={manualFood.name}
+                    onChange={(e) => setManualFood(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., Grilled Chicken Breast"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="calories">Calories *</Label>
+                    <Input
+                      id="calories"
+                      type="number"
+                      value={manualFood.calories}
+                      onChange={(e) => setManualFood(prev => ({ ...prev, calories: e.target.value }))}
+                      placeholder="250"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantity</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      step="0.1"
+                      value={manualFood.quantity}
+                      onChange={(e) => setManualFood(prev => ({ ...prev, quantity: e.target.value }))}
+                      placeholder="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="serving">Serving Size</Label>
+                  <Input
+                    id="serving"
+                    value={manualFood.servingSize}
+                    onChange={(e) => setManualFood(prev => ({ ...prev, servingSize: e.target.value }))}
+                    placeholder="1 cup, 100g, 1 piece"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="protein">Protein (g)</Label>
+                    <Input
+                      id="protein"
+                      type="number"
+                      step="0.1"
+                      value={manualFood.protein}
+                      onChange={(e) => setManualFood(prev => ({ ...prev, protein: e.target.value }))}
+                      placeholder="25"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="carbs">Carbs (g)</Label>
+                    <Input
+                      id="carbs"
+                      type="number"
+                      step="0.1"
+                      value={manualFood.carbs}
+                      onChange={(e) => setManualFood(prev => ({ ...prev, carbs: e.target.value }))}
+                      placeholder="30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fat">Fat (g)</Label>
+                    <Input
+                      id="fat"
+                      type="number"
+                      step="0.1"
+                      value={manualFood.fat}
+                      onChange={(e) => setManualFood(prev => ({ ...prev, fat: e.target.value }))}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setShowManualEntry(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleManualEntry}>
+                    Add Food
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" className="h-16 flex flex-col gap-2" disabled>
             <Scan className="w-5 h-5" />
             <span className="text-xs">Barcode</span>
           </Button>
-          
-          <Button variant="outline" className="h-16 flex flex-col gap-2">
-            <Camera className="w-5 h-5" />
-            <span className="text-xs">Photo</span>
+
+          <Button
+            variant="outline"
+            className="h-16 flex flex-col gap-1"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isAnalyzing}
+          >
+            {isAnalyzing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Camera className="w-5 h-5" />
+            )}
+            <span className="text-xs text-center leading-tight">
+              {isAnalyzing ? analysisProgress || 'Analyzing...' : 'Photo'}
+            </span>
           </Button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoCapture}
+            className="hidden"
+          />
         </div>
       </div>
 
-      {/* Recent Meals */}
+      {/* Today's Meals */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Recent Meals</h2>
-        
+        <h2 className="text-lg font-semibold text-foreground">Today's Meals</h2>
+
         <div className="space-y-3">
-          {[
-            { name: "Greek Yogurt with Berries", calories: 180, time: "8:30 AM" },
-            { name: "Grilled Chicken Salad", calories: 420, time: "12:45 PM" },
-            { name: "Protein Smoothie", calories: 280, time: "3:20 PM" }
-          ].map((meal, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gradient-card rounded-lg border border-border">
-              <div>
-                <h3 className="font-medium text-foreground">{meal.name}</h3>
-                <p className="text-sm text-muted-foreground">{meal.time} • {meal.calories} cal</p>
-              </div>
-              <Button size="sm" variant="ghost">
-                <Plus className="w-4 h-4" />
-              </Button>
+          {todaysNutrition.meals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No meals logged yet today.</p>
+              <p className="text-sm">Take a photo or add manually to get started!</p>
             </div>
-          ))}
+          ) : (
+            todaysNutrition.meals.map((meal) => (
+              <div key={meal.id} className="flex items-center justify-between p-4 bg-gradient-card rounded-lg border border-border">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-medium text-foreground">{meal.foodItem.name}</h3>
+                    {meal.source === 'photo' && <Camera className="w-3 h-3 text-blue-500" />}
+                    {meal.source === 'search' && <Search className="w-3 h-3 text-green-500" />}
+                    {meal.source === 'conversation' && <MessageCircle className="w-3 h-3 text-purple-500" />}
+                    {meal.source === 'manual' && <Plus className="w-3 h-3 text-orange-500" />}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(meal.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} •
+                    {Math.round(meal.foodItem.calories * meal.quantity)} cal •
+                    {meal.quantity > 1 ? `${meal.quantity}x ` : ''}{meal.foodItem.servingSize}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    P: {Math.round(meal.foodItem.macros.protein * meal.quantity)}g •
+                    C: {Math.round(meal.foodItem.macros.carbs * meal.quantity)}g •
+                    F: {Math.round(meal.foodItem.macros.fat * meal.quantity)}g
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeMeal(meal.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
